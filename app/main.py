@@ -54,12 +54,28 @@ def main():
         
         st.markdown("---")
         
-        # 股票代碼輸入
-        stock_code = st.text_input(
-            "股票代碼",
+        # 股票輸入（支援代碼或名稱）
+        stock_input = st.text_input(
+            "股票代碼或名稱",
             value="2330",
-            help="請輸入台股代碼，例如：2330（台積電）"
+            help="請輸入台股代碼（例如：2330）或完整名稱（例如：台積電、TSMC）"
         )
+        
+        # 即時驗證與顯示
+        stock_code = ""
+        stock_name = ""
+        if stock_input:
+            stock_info = st.session_state.data_manager.normalize_stock_input(stock_input)
+            
+            if stock_info['is_valid']:
+                st.success(f"✓ {stock_info['display_name']}")
+                stock_code = stock_info['stock_code']
+                stock_name = stock_info['stock_name']
+            else:
+                st.error("⚠️ 無效的股票代碼或名稱")
+                st.info("請輸入有效的台股代碼（如：2330）或完整股票名稱（如：台積電）")
+                stock_code = ""
+                stock_name = ""
         
         # 投資金額
         investment_amount = st.number_input(
@@ -79,19 +95,21 @@ def main():
     
     # 根據選擇顯示不同頁面
     if page == "DCF 估值":
-        show_dcf_valuation(stock_code, investment_amount)
+        show_dcf_valuation(stock_code, stock_name, investment_amount)
     elif page == "歷史回測":
-        show_backtest(stock_code)
+        show_backtest(stock_code, stock_name)
     elif page == "風險分析":
-        show_risk_analysis(stock_code, investment_amount)
+        show_risk_analysis(stock_code, stock_name, investment_amount)
     elif page == "綜合報告":
-        show_comprehensive_report(stock_code, investment_amount)
+        show_comprehensive_report(stock_code, stock_name, investment_amount)
 
 
-def show_dcf_valuation(stock_code: str, investment_amount: float):
+def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: float):
     """顯示 DCF 估值頁面"""
     
-    st.header(f"🎯 DCF 估值分析 - {stock_code}")
+    # 組合顯示名稱
+    display_title = f"{stock_code} {stock_name}" if stock_name else stock_code
+    st.header(f"🎯 DCF 估值分析 - {display_title}")
     
     # 參數設定區
     col1, col2 = st.columns(2)
@@ -99,33 +117,93 @@ def show_dcf_valuation(stock_code: str, investment_amount: float):
     with col1:
         st.subheader("參數設定")
         
-        growth_rate_1 = st.slider(
-            "成長率（1-5年）",
-            min_value=0.0,
-            max_value=0.50,
-            value=0.23,
-            step=0.01,
-            format="%.0f%%"
-        )
+        # 取得建議成長率（如果有的話）
+        suggested_gr1 = st.session_state.get('suggested_gr1', 23.0)
+        suggested_gr2 = st.session_state.get('suggested_gr2', 12.0)
+        growth_message = st.session_state.get('growth_message', '')
         
-        growth_rate_2 = st.slider(
-            "成長率（6-10年）",
-            min_value=0.0,
-            max_value=0.30,
-            value=0.12,
-            step=0.01,
-            format="%.0f%%"
-        )
+        # 顯示數據來源說明
+        if growth_message:
+            st.info(f"📊 {growth_message}")
         
-        discount_rate = st.slider(
-            "折現率",
-            min_value=0.05,
-            max_value=0.20,
-            value=0.11,
-            step=0.01,
-            format="%.0f%%",
-            help="可使用 CAPM 模型計算，或手動設定"
-        )
+        # 成長率（1-5年）- 滑桿 + 精確輸入
+        st.markdown("**成長率（1-5年）**")
+        slider_col1, input_col1 = st.columns([3, 1])
+        with slider_col1:
+            growth_rate_1_slider = st.slider(
+                "快速調整",
+                min_value=0,
+                max_value=50,
+                value=int(suggested_gr1),
+                step=1,
+                format="%d%%",
+                key="gr1_slider",
+                label_visibility="collapsed"
+            )
+        with input_col1:
+            growth_rate_1_input = st.number_input(
+                "精確值 (%)",
+                min_value=0.0,
+                max_value=50.0,
+                value=float(suggested_gr1),
+                step=0.1,
+                format="%.1f",
+                key="gr1_input"
+            )
+        growth_rate_1 = growth_rate_1_input / 100
+        
+        # 成長率（6-10年）- 滑桿 + 精確輸入
+        st.markdown("**成長率（6-10年）**")
+        slider_col2, input_col2 = st.columns([3, 1])
+        with slider_col2:
+            growth_rate_2_slider = st.slider(
+                "快速調整",
+                min_value=0,
+                max_value=30,
+                value=int(suggested_gr2),
+                step=1,
+                format="%d%%",
+                key="gr2_slider",
+                label_visibility="collapsed"
+            )
+        with input_col2:
+            growth_rate_2_input = st.number_input(
+                "精確值 (%)",
+                min_value=0.0,
+                max_value=30.0,
+                value=float(suggested_gr2),
+                step=0.1,
+                format="%.1f",
+                key="gr2_input"
+            )
+        growth_rate_2 = growth_rate_2_input / 100
+        
+        # 折現率 - 滑桿 + 精確輸入
+        st.markdown("**折現率**")
+        st.caption("可使用 CAPM 模型計算，或手動設定")
+        slider_col3, input_col3 = st.columns([3, 1])
+        with slider_col3:
+            discount_rate_slider = st.slider(
+                "快速調整",
+                min_value=5,
+                max_value=20,
+                value=11,
+                step=1,
+                format="%d%%",
+                key="dr_slider",
+                label_visibility="collapsed"
+            )
+        with input_col3:
+            discount_rate_input = st.number_input(
+                "精確值 (%)",
+                min_value=5.0,
+                max_value=20.0,
+                value=11.0,
+                step=0.1,
+                format="%.1f",
+                key="dr_input"
+            )
+        discount_rate = discount_rate_input / 100
     
     with col2:
         st.subheader("股票資訊")
@@ -148,6 +226,15 @@ def show_dcf_valuation(stock_code: str, investment_amount: float):
                 else:
                     st.warning("⚠️ 無法獲取 EPS 數據")
                     return
+                
+                # 計算建議成長率
+                growth_rates = st.session_state.data_manager.calculate_historical_growth_rate(stock_code)
+                
+                # 儲存到 session state 供參數設定使用
+                st.session_state['suggested_gr1'] = growth_rates['growth_rate_1_5'] * 100
+                st.session_state['suggested_gr2'] = growth_rates['growth_rate_6_10'] * 100
+                st.session_state['growth_data_quality'] = growth_rates['data_quality']
+                st.session_state['growth_message'] = growth_rates['message']
                     
             except Exception as e:
                 st.error(f"數據獲取失敗: {str(e)}")
@@ -264,27 +351,93 @@ def show_dcf_valuation(stock_code: str, investment_amount: float):
                 st.error(f"計算失敗: {str(e)}")
 
 
-def show_backtest(stock_code: str):
+def show_backtest(stock_code: str, stock_name: str):
     """顯示回測頁面"""
     
-    st.header(f"⏮️ 歷史回測 - {stock_code}")
+    # 組合顯示名稱
+    display_title = f"{stock_code} {stock_name}" if stock_name else stock_code
+    st.header(f"⏮️ 歷史回測 - {display_title}")
     
     # 回測參數
     col1, col2 = st.columns(2)
     
     with col1:
         backtest_years = st.slider("回測年數", 1, 5, 2)
-        growth_rate_1 = st.slider("成長率（1-5年）", 0.0, 0.50, 0.23, 0.01, format="%.0f%%", key="bt_gr1")
+        
+        # 成長率（1-5年）- 滑桿 + 精確輸入
+        st.markdown("**成長率（1-5年）**")
+        bt_slider_col1, bt_input_col1 = st.columns([3, 1])
+        with bt_slider_col1:
+            growth_rate_1_slider = st.slider(
+                "快速調整",
+                min_value=0,
+                max_value=50,
+                value=23,
+                step=1,
+                format="%d%%",
+                key="bt_gr1_slider",
+                label_visibility="collapsed"
+            )
+        with bt_input_col1:
+            growth_rate_1_input = st.number_input(
+                "精確值 (%)",
+                min_value=0.0,
+                max_value=50.0,
+                value=23.0,
+                step=0.1,
+                format="%.1f",
+                key="bt_gr1_input"
+            )
+        growth_rate_1 = growth_rate_1_input / 100
     
     with col2:
         rebalance_months = st.slider("重新計算週期（月）", 1, 12, 3)
-        growth_rate_2 = st.slider("成長率（6-10年）", 0.0, 0.30, 0.12, 0.01, format="%.0f%%", key="bt_gr2")
+        
+        # 成長率（6-10年）- 滑桿 + 精確輸入
+        st.markdown("**成長率（6-10年）**")
+        bt_slider_col2, bt_input_col2 = st.columns([3, 1])
+        with bt_slider_col2:
+            growth_rate_2_slider = st.slider(
+                "快速調整",
+                min_value=0,
+                max_value=30,
+                value=12,
+                step=1,
+                format="%d%%",
+                key="bt_gr2_slider",
+                label_visibility="collapsed"
+            )
+        with bt_input_col2:
+            growth_rate_2_input = st.number_input(
+                "精確值 (%)",
+                min_value=0.0,
+                max_value=30.0,
+                value=12.0,
+                step=0.1,
+                format="%.1f",
+                key="bt_gr2_input"
+            )
+        growth_rate_2 = growth_rate_2_input / 100
     
     if st.button("🔄 執行回測", type="primary"):
-        with st.spinner("回測中，這可能需要一些時間..."):
+        # 顯示更詳細的進度訊息
+        progress_placeholder = st.empty()
+        
+        with st.spinner("正在準備回測數據，請稍候..."):
             try:
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=365*backtest_years)
+                
+                # 顯示回測資訊
+                st.info(f"""
+                📊 **回測設定**
+                - 股票代碼：{stock_code}
+                - 回測期間：{start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')} ({backtest_years} 年)
+                - 成長率假設：1-5年 {growth_rate_1:.1%}，6-10年 {growth_rate_2:.1%}
+                - 重新計算週期：每 {rebalance_months} 個月
+                """)
+                
+                progress_placeholder.info("⏳ 正在獲取歷史數據並執行回測...")
                 
                 results = st.session_state.backtest_engine.run_backtest(
                     stock_code=stock_code,
@@ -294,9 +447,24 @@ def show_backtest(stock_code: str):
                     rebalance_months=rebalance_months
                 )
                 
+                progress_placeholder.empty()
+                
                 if 'error' in results:
-                    st.error(f"回測失敗: {results['error']}")
+                    st.error(f"❌ **回測失敗**\n\n{results['error']}")
+                    
+                    # 提供建議
+                    st.warning("""
+                    💡 **改善建議**：
+                    - 嘗試縮短回測年數（例如改為 1 年）
+                    - 增加重新計算週期（例如改為 6 個月）
+                    - 確認股票代碼是否正確
+                    - 檢查網路連線是否正常
+                    """)
                     return
+                
+                # 顯示成功訊息
+                if 'failed_points' in results and results['failed_points'] > 0:
+                    st.warning(f"⚠️ 部分回測點失敗（{results['failed_points']} 個），但已成功完成部分回測")
                 
                 # 顯示摘要
                 st.markdown("---")
@@ -344,10 +512,12 @@ def show_backtest(stock_code: str):
                 st.error(f"回測執行失敗: {str(e)}")
 
 
-def show_risk_analysis(stock_code: str, investment_amount: float):
+def show_risk_analysis(stock_code: str, stock_name: str, investment_amount: float):
     """顯示風險分析頁面"""
     
-    st.header(f"⚠️ 風險分析 - {stock_code}")
+    # 組合顯示名稱
+    display_title = f"{stock_code} {stock_name}" if stock_name else stock_code
+    st.header(f"⚠️ 風險分析 - {display_title}")
     
     # 分析選項
     analysis_type = st.radio(
@@ -608,10 +778,12 @@ def show_beta_analysis(stock_code: str):
                 st.error(f"分析失敗: {str(e)}")
 
 
-def show_comprehensive_report(stock_code: str, investment_amount: float):
+def show_comprehensive_report(stock_code: str, stock_name: str, investment_amount: float):
     """顯示綜合報告"""
     
-    st.header(f"📋 綜合分析報告 - {stock_code}")
+    # 組合顯示名稱
+    display_title = f"{stock_code} {stock_name}" if stock_name else stock_code
+    st.header(f"📋 綜合分析報告 - {display_title}")
     
     if st.button("🚀 生成完整報告", type="primary"):
         with st.spinner("生成報告中，請稍候..."):

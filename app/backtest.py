@@ -45,29 +45,63 @@ class BacktestEngine:
         Returns:
             回測結果字典
         """
-        print(f"\n開始回測 {stock_code}...")
+        print(f"\n========== 開始回測 {stock_code} ==========")
         print(f"期間: {start_date.strftime('%Y-%m-%d')} 至 {end_date.strftime('%Y-%m-%d')}")
+        print(f"成長率假設: 1-5年={growth_rates[0]:.1%}, 6-10年={growth_rates[1]:.1%}")
+        print(f"重新計算週期: {rebalance_months} 個月")
 
-        # 獲取歷史價格數據
-        price_data = self.data_manager.get_price_data(stock_code, start_date, end_date)
+        # 獲取歷史價格數據（強制更新）
+        print("\n[1/3] 正在獲取歷史價格數據...")
+        price_data = self.data_manager.get_price_data(
+            stock_code, 
+            start_date, 
+            end_date,
+            force_update=True
+        )
         
         if price_data is None or len(price_data) == 0:
-            return {'error': '無法獲取價格數據'}
+            error_msg = f'無法獲取 {stock_code} 的價格數據，請檢查股票代碼或網路連線'
+            print(f"❌ {error_msg}")
+            return {'error': error_msg}
+        
+        print(f"✅ 成功獲取 {len(price_data)} 筆價格數據")
+        print(f"   期間: {price_data['date'].min()} 至 {price_data['date'].max()}")
 
-        # 獲取財務數據
-        financial_data = self.data_manager.get_financial_data(stock_code, years=10)
+        # 獲取財務數據（強制更新）
+        print("\n[2/3] 正在獲取財務數據...")
+        financial_data = self.data_manager.get_financial_data(
+            stock_code, 
+            years=10,
+            force_update=True
+        )
         
         if financial_data is None or len(financial_data) == 0:
-            return {'error': '無法獲取財務數據'}
+            error_msg = f'無法獲取 {stock_code} 的財務數據，請稍後再試'
+            print(f"❌ {error_msg}")
+            return {'error': error_msg}
+        
+        # 檢查 EPS 數據品質
+        valid_eps = financial_data[financial_data['eps'] > 0]
+        print(f"✅ 成功獲取 {len(financial_data)} 筆財務數據")
+        print(f"   有效 EPS 數據: {len(valid_eps)} 筆")
+        
+        if len(valid_eps) < 2:
+            error_msg = f'EPS 數據不足（僅 {len(valid_eps)} 筆），無法進行回測。建議選擇其他股票或縮短回測期間。'
+            print(f"⚠️ {error_msg}")
+            return {'error': error_msg}
 
         # 生成回測點
         backtest_points = self._generate_backtest_points(
             start_date, end_date, rebalance_months
         )
+        
+        print(f"\n[3/3] 開始執行回測（共 {len(backtest_points)} 個時間點）...")
 
         # 執行回測
         results = []
-        for test_date in backtest_points:
+        failed_points = []
+        
+        for idx, test_date in enumerate(backtest_points, 1):
             result = self._backtest_single_point(
                 stock_code,
                 test_date,
@@ -75,18 +109,44 @@ class BacktestEngine:
                 financial_data,
                 growth_rates
             )
+            
             if result:
                 results.append(result)
+                print(f"  ✓ 點 {idx}/{len(backtest_points)}: {test_date.strftime('%Y-%m-%d')} - 成功")
+            else:
+                failed_points.append(test_date)
+                print(f"  ✗ 點 {idx}/{len(backtest_points)}: {test_date.strftime('%Y-%m-%d')} - 失敗（數據不足）")
+
+        print(f"\n回測完成:")
+        print(f"  成功: {len(results)} 個點")
+        print(f"  失敗: {len(failed_points)} 個點")
+        
+        if len(results) == 0:
+            error_msg = '所有回測點都失敗了。可能原因：\n' \
+                       '1. 回測期間太早，缺乏歷史數據\n' \
+                       '2. EPS 數據品質不佳\n' \
+                       '建議：縮短回測期間（例如改為 1 年）或選擇數據更完整的股票'
+            print(f"❌ {error_msg}")
+            return {'error': error_msg}
 
         # 分析結果
+        print("\n正在分析回測結果...")
         analysis = self._analyze_backtest_results(results)
+        
+        if 'error' in analysis:
+            print(f"⚠️ {analysis['error']}")
+        else:
+            print(f"✅ 分析完成")
+            print(f"   有效預測: {analysis.get('valid_predictions', 0)} 筆")
+            print(f"   預測準確度: {analysis.get('accuracy', 0):.1%}")
 
         return {
             'stock_code': stock_code,
             'start_date': start_date,
             'end_date': end_date,
             'results': results,
-            'analysis': analysis
+            'analysis': analysis,
+            'failed_points': len(failed_points)
         }
 
     def _generate_backtest_points(

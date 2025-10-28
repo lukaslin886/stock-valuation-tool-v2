@@ -367,6 +367,122 @@ class DataManager:
             print(f"獲取股價失敗: {str(e)}")
             return 0.0
 
+    def calculate_historical_growth_rate(self, stock_code: str, years: int = 3) -> Dict:
+        """
+        計算歷史 EPS 成長率（基於 CAGR）
+        
+        Args:
+            stock_code: 股票代碼
+            years: 回溯年數（預設3年）
+        
+        Returns:
+            {
+                'growth_rate_1_5': float,  # 1-5年建議成長率
+                'growth_rate_6_10': float, # 6-10年建議成長率
+                'data_quality': str,       # 'good'/'fair'/'poor'
+                'sample_size': int,        # 有效樣本數
+                'message': str             # 說明訊息
+            }
+        """
+        try:
+            print(f"\n正在計算 {stock_code} 的歷史成長率...")
+            
+            # 獲取財務數據
+            financial_data = self.get_financial_data(stock_code, years=years)
+            
+            if financial_data is None or len(financial_data) == 0:
+                print(f"警告：無法獲取 {stock_code} 的財務數據")
+                return self._get_default_growth_rates('poor', 0, '無歷史數據，使用產業平均值')
+            
+            # 過濾有效的 EPS 數據
+            valid_eps = financial_data[['date', 'eps']].copy()
+            valid_eps = valid_eps.dropna()
+            valid_eps = valid_eps[valid_eps['eps'] > 0]  # 只保留正值
+            
+            if len(valid_eps) < 2:
+                print(f"警告：有效 EPS 數據不足（僅 {len(valid_eps)} 筆）")
+                return self._get_default_growth_rates('poor', len(valid_eps), '歷史數據不足，使用產業平均值')
+            
+            # 排序並取最早和最新的 EPS
+            valid_eps = valid_eps.sort_values('date')
+            earliest_eps = float(valid_eps.iloc[0]['eps'])
+            latest_eps = float(valid_eps.iloc[-1]['eps'])
+            
+            # 計算時間跨度（年數）
+            date_range = (valid_eps.iloc[-1]['date'] - valid_eps.iloc[0]['date']).days / 365.25
+            
+            if date_range < 0.5:
+                print(f"警告：數據時間跨度太短（{date_range:.1f}年）")
+                return self._get_default_growth_rates('poor', len(valid_eps), '時間跨度不足，使用產業平均值')
+            
+            # 計算 CAGR（年複合成長率）
+            if earliest_eps > 0 and latest_eps > 0:
+                cagr = (latest_eps / earliest_eps) ** (1 / date_range) - 1
+                
+                # 檢查成長率是否合理（-30% ~ 100%）
+                if cagr < -0.30:
+                    print(f"警告：計算出的成長率過低（{cagr:.1%}），限制為 -20%")
+                    cagr = -0.20
+                    data_quality = 'fair'
+                    message = f'基於 {len(valid_eps)} 筆數據，成長率已調整至合理範圍'
+                elif cagr > 1.00:
+                    print(f"警告：計算出的成長率過高（{cagr:.1%}），限制為 50%")
+                    cagr = 0.50
+                    data_quality = 'fair'
+                    message = f'基於 {len(valid_eps)} 筆數據，成長率已調整至合理範圍'
+                else:
+                    data_quality = 'good' if len(valid_eps) >= 3 else 'fair'
+                    message = f'基於過去 {date_range:.1f} 年歷史數據（{len(valid_eps)} 筆）'
+                
+                # 計算兩個階段的成長率
+                growth_rate_1_5 = cagr  # 1-5年使用歷史 CAGR
+                growth_rate_6_10 = cagr * 0.6  # 6-10年假設趨緩至 60%
+                
+                print(f"計算完成：")
+                print(f"  歷史 CAGR: {cagr:.1%}")
+                print(f"  建議成長率(1-5年): {growth_rate_1_5:.1%}")
+                print(f"  建議成長率(6-10年): {growth_rate_6_10:.1%}")
+                print(f"  數據品質: {data_quality}")
+                print(f"  樣本數: {len(valid_eps)}")
+                
+                return {
+                    'growth_rate_1_5': growth_rate_1_5,
+                    'growth_rate_6_10': growth_rate_6_10,
+                    'data_quality': data_quality,
+                    'sample_size': len(valid_eps),
+                    'message': message
+                }
+            else:
+                print(f"警告：EPS 數據異常（最早:{earliest_eps}, 最新:{latest_eps}）")
+                return self._get_default_growth_rates('poor', len(valid_eps), 'EPS 數據異常，使用產業平均值')
+            
+        except Exception as e:
+            print(f"計算成長率失敗: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return self._get_default_growth_rates('poor', 0, f'計算失敗: {str(e)}')
+    
+    def _get_default_growth_rates(self, quality: str, sample_size: int, message: str) -> Dict:
+        """
+        返回預設的成長率（當無法計算歷史成長率時）
+        
+        Args:
+            quality: 數據品質
+            sample_size: 樣本數量
+            message: 說明訊息
+        
+        Returns:
+            預設成長率字典
+        """
+        # 使用產業平均值：15%（1-5年）、9%（6-10年）
+        return {
+            'growth_rate_1_5': 0.15,
+            'growth_rate_6_10': 0.09,
+            'data_quality': quality,
+            'sample_size': sample_size,
+            'message': message
+        }
+
     # === 私有方法：資料庫操作 ===
     
     def _get_cached_stock_info(self, stock_code: str) -> Optional[Dict]:
@@ -530,6 +646,191 @@ class DataManager:
             return "上市"
         else:
             return "上櫃"
+
+    def get_all_stocks_info(self, force_update: bool = False) -> pd.DataFrame:
+        """
+        獲取所有台股的代碼與名稱清單
+        
+        Args:
+            force_update: 是否強制更新
+            
+        Returns:
+            包含 stock_code 和 stock_name 的 DataFrame
+        """
+        # 先檢查快取
+        if not force_update:
+            cached_list = self._get_cached_stock_list()
+            if cached_list is not None and len(cached_list) > 0:
+                return cached_list
+        
+        # 從 FinMind 獲取
+        try:
+            info = self.finmind.taiwan_stock_info()
+            if info is not None and len(info) > 0:
+                # 只保留需要的欄位
+                df = pd.DataFrame({
+                    'stock_code': info['stock_id'],
+                    'stock_name': info['stock_name']
+                })
+                
+                # 儲存到快取
+                self._save_stock_list(df)
+                
+                return df
+        except Exception as e:
+            print(f"獲取股票清單失敗: {str(e)}")
+        
+        # 如果失敗，返回快取數據
+        cached_list = self._get_cached_stock_list()
+        if cached_list is not None:
+            return cached_list
+        
+        return pd.DataFrame(columns=['stock_code', 'stock_name'])
+
+    def normalize_stock_input(self, user_input: str) -> Dict:
+        """
+        標準化使用者輸入（支援股票代碼或完整名稱）
+        
+        Args:
+            user_input: 使用者輸入的字串（代碼或名稱）
+            
+        Returns:
+            {
+                'stock_code': str,      # 標準化的股票代碼
+                'stock_name': str,      # 股票名稱
+                'is_valid': bool,       # 是否為有效輸入
+                'display_name': str     # 顯示用格式 "代碼 名稱"
+            }
+        """
+        if not user_input or not user_input.strip():
+            return {
+                'stock_code': '',
+                'stock_name': '',
+                'is_valid': False,
+                'display_name': ''
+            }
+        
+        user_input = user_input.strip()
+        
+        # 獲取股票清單
+        stocks_df = self.get_all_stocks_info()
+        
+        if len(stocks_df) == 0:
+            # 如果無法獲取股票清單，嘗試直接查詢
+            stock_name = self._get_stock_name(user_input)
+            if stock_name and not stock_name.startswith('股票'):
+                return {
+                    'stock_code': user_input,
+                    'stock_name': stock_name,
+                    'is_valid': True,
+                    'display_name': f"{user_input} {stock_name}"
+                }
+            return {
+                'stock_code': user_input,
+                'stock_name': '',
+                'is_valid': False,
+                'display_name': ''
+            }
+        
+        # 情況 1: 使用者輸入純數字（當作代碼處理）
+        if user_input.isdigit():
+            match = stocks_df[stocks_df['stock_code'] == user_input]
+            if len(match) > 0:
+                stock_name = match.iloc[0]['stock_name']
+                return {
+                    'stock_code': user_input,
+                    'stock_name': stock_name,
+                    'is_valid': True,
+                    'display_name': f"{user_input} {stock_name}"
+                }
+        
+        # 情況 2: 使用者輸入名稱（完整匹配）
+        # 先嘗試完全匹配
+        match = stocks_df[stocks_df['stock_name'] == user_input]
+        if len(match) > 0:
+            stock_code = match.iloc[0]['stock_code']
+            stock_name = match.iloc[0]['stock_name']
+            return {
+                'stock_code': stock_code,
+                'stock_name': stock_name,
+                'is_valid': True,
+                'display_name': f"{stock_code} {stock_name}"
+            }
+        
+        # 情況 3: 不區分大小寫的匹配（支援英文名稱）
+        match = stocks_df[stocks_df['stock_name'].str.upper() == user_input.upper()]
+        if len(match) > 0:
+            stock_code = match.iloc[0]['stock_code']
+            stock_name = match.iloc[0]['stock_name']
+            return {
+                'stock_code': stock_code,
+                'stock_name': stock_name,
+                'is_valid': True,
+                'display_name': f"{stock_code} {stock_name}"
+            }
+        
+        # 無法匹配
+        return {
+            'stock_code': user_input,
+            'stock_name': '',
+            'is_valid': False,
+            'display_name': ''
+        }
+
+    def _get_cached_stock_list(self) -> Optional[pd.DataFrame]:
+        """從資料庫獲取快取的股票清單"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            
+            # 檢查是否有最近更新的資料（7天內）
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT COUNT(*) FROM stock_info 
+                WHERE update_time >= datetime('now', '-7 days')
+            ''')
+            count = cursor.fetchone()[0]
+            
+            if count > 0:
+                df = pd.read_sql_query('''
+                    SELECT stock_code, stock_name
+                    FROM stock_info
+                    ORDER BY stock_code
+                ''', conn)
+                conn.close()
+                return df if len(df) > 0 else None
+            
+            conn.close()
+            return None
+        except Exception as e:
+            print(f"讀取快取股票清單失敗: {str(e)}")
+            return None
+
+    def _save_stock_list(self, df: pd.DataFrame):
+        """儲存股票清單到資料庫"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            update_time = datetime.now()
+            
+            for _, row in df.iterrows():
+                cursor.execute('''
+                    INSERT OR REPLACE INTO stock_info
+                    (stock_code, stock_name, industry, market, update_time)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    row['stock_code'],
+                    row['stock_name'],
+                    '',  # industry 可以之後補充
+                    '',  # market 可以之後補充
+                    update_time
+                ))
+            
+            conn.commit()
+            conn.close()
+            print(f"已儲存 {len(df)} 筆股票資訊到快取")
+        except Exception as e:
+            print(f"儲存股票清單失敗: {str(e)}")
 
 
 # 測試函數
