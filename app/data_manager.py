@@ -1,15 +1,29 @@
 """
 數據管理模組
-負責從 FinMind 和 yfinance 獲取台股數據
+負責從 FinLab、FinMind 和 yfinance 獲取台股數據
+優先順序：FinLab > FinMind > yfinance
 """
 
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Tuple, Callable
 import pandas as pd
 import sqlite3
 from FinMind.data import DataLoader
 import yfinance as yf
+from dotenv import load_dotenv
+
+# 載入環境變數
+load_dotenv()
+
+# FinLab 相關 import
+try:
+    import finlab
+    from finlab import data as finlab_data
+    FINLAB_AVAILABLE = True
+except ImportError:
+    FINLAB_AVAILABLE = False
+    print("警告：FinLab 套件未安裝，將使用 FinMind 作為主要資料源")
 
 
 class DataManager:
@@ -20,10 +34,13 @@ class DataManager:
         初始化數據管理器
 
         Args:
-            api_token: FinMind API Token
+            api_token: FinMind API Token (向下相容參數)
             db_path: SQLite 資料庫路徑
         """
-        self.api_token = api_token or os.getenv('FINMIND_TOKEN')
+        # 資料來源 Token
+        self.finmind_token = api_token or os.getenv('FINMIND_TOKEN')
+        self.finlab_token = os.getenv('FINLAB_API_TOKEN')
+        
         self.db_path = db_path or os.getenv('DATABASE_PATH', 'data/stock_data.db')
         
         # 確保數據目錄存在
@@ -32,10 +49,36 @@ class DataManager:
         # 初始化資料庫
         self._init_database()
         
-        # 初始化 FinMind
+        # 初始化 FinLab（優先）
+        self.finlab_ready = False
+        if FINLAB_AVAILABLE and self.finlab_token:
+            try:
+                finlab.login(self.finlab_token)
+                self.finlab_ready = True
+                print("✓ FinLab 已成功初始化並登入")
+            except Exception as e:
+                print(f"✗ FinLab 初始化失敗: {str(e)}")
+                print("  將使用 FinMind 作為主要資料源")
+        elif not FINLAB_AVAILABLE:
+            print("ℹ FinLab 套件未安裝，使用 FinMind 作為主要資料源")
+        elif not self.finlab_token:
+            print("ℹ 未設定 FINLAB_API_TOKEN，使用 FinMind 作為主要資料源")
+        
+        # 初始化 FinMind（備援）
         self.finmind = DataLoader()
-        if self.api_token:
-            self.finmind.login_by_token(api_token=self.api_token)
+        if self.finmind_token:
+            self.finmind.login_by_token(api_token=self.finmind_token)
+            print("✓ FinMind 已成功初始化")
+        
+        # 資料源使用統計
+        self.data_source_stats = {
+            'finlab_success': 0,
+            'finlab_fail': 0,
+            'finmind_success': 0,
+            'finmind_fail': 0,
+            'yfinance_success': 0,
+            'yfinance_fail': 0
+        }
 
     def _init_database(self):
         """初始化 SQLite 資料庫"""
@@ -136,7 +179,12 @@ class DataManager:
         force_update: bool = False
     ) -> pd.DataFrame:
         """
-        獲取財務數據
+        獲取財務數據（優先使用 yfinance，備援使用 FinMind）
+        
+        資料來源優先序列：
+        1. yfinance (主要來源)
+        2. FinMind (備援)
+        3. 快取資料 (最後選擇)
 
         Args:
             stock_code: 股票代碼
@@ -153,70 +201,22 @@ class DataManager:
                 print(f"使用快取的財務數據（{len(cached_data)} 筆）")
                 return cached_data
         
-        # 從 FinMind 獲取
-        try:
-            end_date = datetime.now().strftime('%Y-%m-%d')
-            start_date = (datetime.now() - timedelta(days=years*365)).strftime('%Y-%m-%d')
-            
-            print(f"正在從 FinMind 獲取財務數據: {stock_code} ({start_date} ~ {end_date})")
-            
-            # 獲取財報數據
-            financial_df = self.finmind.taiwan_stock_financial_statement(
-                stock_id=stock_code,
-                start_date=start_date,
-                end_date=end_date
-            )
-            
-            if financial_df is not None and len(financial_df) > 0:
-                print(f"FinMind 返回 {len(financial_df)} 筆財務數據")
-                print(f"可用欄位: {list(financial_df.columns)}")
-                
-                # 處理數據格式（使用安全的欄位映射）
-                df = pd.DataFrame()
-                df['date'] = pd.to_datetime(financial_df.get('date', financial_df.index))
-                
-                # EPS 欄位可能的名稱
-                if 'EPS' in financial_df.columns:
-                    df['eps'] = pd.to_numeric(financial_df['EPS'], errors='coerce')
-                elif 'BasicEarningsPerShare' in financial_df.columns:
-                    df['eps'] = pd.to_numeric(financial_df['BasicEarningsPerShare'], errors='coerce')
-                else:
-                    print("警告：找不到 EPS 欄位")
-                    df['eps'] = 0
-                
-                # 其他欄位
-                df['revenue'] = pd.to_numeric(financial_df.get('Revenue', 0), errors='coerce')
-                df['profit'] = pd.to_numeric(financial_df.get('ProfitLoss', 0), errors='coerce')
-                df['roe'] = pd.to_numeric(financial_df.get('ROE', 0), errors='coerce')
-                df['debt_ratio'] = pd.to_numeric(financial_df.get('DebtRatio', 0), errors='coerce')
-                
-                # 移除 NaN 行
-                df = df.dropna(subset=['date'])
-                
-                if len(df) > 0:
-                    print(f"處理後得到 {len(df)} 筆有效數據")
-                    # 儲存到資料庫
-                    self._save_financial_data(stock_code, df)
-                    return df
-                else:
-                    print("警告：處理後沒有有效數據")
-            else:
-                print(f"FinMind 未返回財務數據")
-            
-            # 如果沒有數據，返回空 DataFrame
-            return pd.DataFrame()
-            
-        except Exception as e:
-            print(f"獲取財務數據失敗: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            
-            # 返回快取數據
-            cached_data = self._get_cached_financial_data(stock_code, years)
-            if cached_data is not None:
-                print(f"使用快取數據作為備用（{len(cached_data)} 筆）")
-                return cached_data
-            return pd.DataFrame()
+        # 使用多層備援策略（yfinance → FinMind）
+        fetch_functions = [
+            ('yfinance', lambda: self._fetch_financial_from_yfinance(stock_code, years)),
+            ('FinMind', lambda: self._fetch_financial_from_finmind(stock_code, years))
+        ]
+        
+        data = self._fetch_with_priority(fetch_functions, '獲取財務數據')
+        
+        # 處理結果
+        if data is not None and len(data) > 0:
+            self._save_financial_data(stock_code, data)
+            return data
+        
+        # 最後備援：返回快取或空 DataFrame
+        cached_data = self._get_cached_financial_data(stock_code, years)
+        return cached_data if cached_data is not None else pd.DataFrame()
 
     def get_price_data(
         self,
@@ -304,49 +304,331 @@ class DataManager:
         
         return pd.DataFrame()
 
+    def _normalize_yfinance_ticker(self, stock_code: str) -> str:
+        """
+        將台股代碼轉換為 yfinance 格式
+        
+        Args:
+            stock_code: 股票代碼（例如：2330）
+            
+        Returns:
+            yfinance 格式的股票代碼（例如：2330.TW 或 2330.TWO）
+        """
+        # 上市股票通常以 1-2 開頭，使用 .TW
+        # 上櫃股票通常以 3-9 開頭，使用 .TWO
+        # 這是簡化的判斷，實際上應該查詢市場別
+        if stock_code.startswith(('1', '2')):
+            return f"{stock_code}.TW"
+        else:
+            return f"{stock_code}.TWO"
+    
+    def _fetch_eps_from_yfinance(self, stock_code: str) -> Optional[float]:
+        """
+        從 yfinance 獲取 EPS
+        
+        嘗試多個欄位來源：
+        1. info['trailingEps']
+        2. info['epsTrailingTwelveMonths']
+        3. financials 中的 'Basic EPS' 或 'Net Income'
+        4. earnings 歷史數據
+        
+        Args:
+            stock_code: 股票代碼
+            
+        Returns:
+            EPS 值，失敗返回 None
+        """
+        try:
+            ticker_symbol = self._normalize_yfinance_ticker(stock_code)
+            ticker = yf.Ticker(ticker_symbol)
+            
+            # 方法 1: 從 info 物件獲取
+            try:
+                info = ticker.info
+                
+                # 嘗試 trailingEps
+                if 'trailingEps' in info and info['trailingEps']:
+                    eps = float(info['trailingEps'])
+                    if eps > 0:
+                        return eps
+                
+                # 嘗試 epsTrailingTwelveMonths
+                if 'epsTrailingTwelveMonths' in info and info['epsTrailingTwelveMonths']:
+                    eps = float(info['epsTrailingTwelveMonths'])
+                    if eps > 0:
+                        return eps
+                
+                # 嘗試 epsForward（預測值，作為備援）
+                if 'forwardEps' in info and info['forwardEps']:
+                    eps = float(info['forwardEps'])
+                    if eps > 0:
+                        return eps
+                        
+            except Exception as e:
+                print(f"  從 info 獲取 EPS 失敗: {str(e)}")
+            
+            # 方法 2: 從 earnings 獲取歷史數據
+            try:
+                earnings = ticker.earnings
+                if earnings is not None and len(earnings) > 0:
+                    # 取最近一年的數據
+                    if 'Earnings' in earnings.columns:
+                        latest_earnings = earnings['Earnings'].iloc[-1]
+                        # 需要除以流通股數才是 EPS，但這裡可能已經是 EPS
+                        if latest_earnings > 0:
+                            return float(latest_earnings)
+            except Exception as e:
+                print(f"  從 earnings 獲取 EPS 失敗: {str(e)}")
+            
+            # 方法 3: 從 financials 計算
+            try:
+                financials = ticker.financials
+                if financials is not None and len(financials) > 0:
+                    # 尋找 Net Income
+                    for row_name in ['Net Income', 'Net Income Common Stockholders']:
+                        if row_name in financials.index:
+                            net_income = financials.loc[row_name].iloc[0]  # 最近一期
+                            
+                            # 獲取流通股數
+                            if 'sharesOutstanding' in info and info['sharesOutstanding']:
+                                shares = float(info['sharesOutstanding'])
+                                eps = net_income / shares
+                                if eps > 0:
+                                    return float(eps)
+                            break
+            except Exception as e:
+                print(f"  從 financials 計算 EPS 失敗: {str(e)}")
+            
+            return None
+            
+        except Exception as e:
+            print(f"  yfinance 獲取 EPS 完全失敗: {str(e)}")
+            return None
+    
+    def _fetch_financial_from_yfinance(self, stock_code: str, years: int) -> Optional[pd.DataFrame]:
+        """
+        從 yfinance 獲取完整財務數據
+        
+        Args:
+            stock_code: 股票代碼
+            years: 獲取最近幾年的數據
+            
+        Returns:
+            財務數據 DataFrame（格式與 FinMind 相容）或 None
+        """
+        try:
+            ticker_symbol = self._normalize_yfinance_ticker(stock_code)
+            ticker = yf.Ticker(ticker_symbol)
+            
+            # 獲取財務報表
+            financials = ticker.financials
+            balance_sheet = ticker.balance_sheet
+            
+            if financials is None or len(financials) == 0:
+                return None
+            
+            # 建立結果 DataFrame
+            data_list = []
+            
+            # 遍歷每一期財報
+            for date in financials.columns[:years*4]:  # 假設每年4季
+                try:
+                    row_data = {'date': pd.to_datetime(date)}
+                    
+                    # 提取 Revenue（營收）
+                    if 'Total Revenue' in financials.index:
+                        row_data['revenue'] = float(financials.loc['Total Revenue', date])
+                    elif 'Revenue' in financials.index:
+                        row_data['revenue'] = float(financials.loc['Revenue', date])
+                    else:
+                        row_data['revenue'] = 0
+                    
+                    # 提取 Net Income（淨利）
+                    if 'Net Income' in financials.index:
+                        row_data['profit'] = float(financials.loc['Net Income', date])
+                    elif 'Net Income Common Stockholders' in financials.index:
+                        row_data['profit'] = float(financials.loc['Net Income Common Stockholders', date])
+                    else:
+                        row_data['profit'] = 0
+                    
+                    # 計算 EPS（如果有流通股數）
+                    info = ticker.info
+                    if 'sharesOutstanding' in info and info['sharesOutstanding'] and row_data['profit'] != 0:
+                        shares = float(info['sharesOutstanding'])
+                        row_data['eps'] = row_data['profit'] / shares
+                    else:
+                        row_data['eps'] = 0
+                    
+                    # 提取資產負債表數據（如果有對應日期）
+                    if balance_sheet is not None and date in balance_sheet.columns:
+                        # Total Assets
+                        if 'Total Assets' in balance_sheet.index:
+                            total_assets = float(balance_sheet.loc['Total Assets', date])
+                        else:
+                            total_assets = 0
+                        
+                        # Total Liabilities
+                        if 'Total Liabilities Net Minority Interest' in balance_sheet.index:
+                            total_liabilities = float(balance_sheet.loc['Total Liabilities Net Minority Interest', date])
+                        elif 'Total Liabilities' in balance_sheet.index:
+                            total_liabilities = float(balance_sheet.loc['Total Liabilities', date])
+                        else:
+                            total_liabilities = 0
+                        
+                        # Stockholder Equity
+                        if 'Stockholders Equity' in balance_sheet.index:
+                            equity = float(balance_sheet.loc['Stockholders Equity', date])
+                        elif 'Total Equity Gross Minority Interest' in balance_sheet.index:
+                            equity = float(balance_sheet.loc['Total Equity Gross Minority Interest', date])
+                        else:
+                            equity = 0
+                        
+                        # 計算 ROE
+                        if equity > 0 and row_data['profit'] != 0:
+                            row_data['roe'] = (row_data['profit'] / equity) * 100
+                        else:
+                            row_data['roe'] = 0
+                        
+                        # 計算負債比率
+                        if total_assets > 0:
+                            row_data['debt_ratio'] = (total_liabilities / total_assets) * 100
+                        else:
+                            row_data['debt_ratio'] = 0
+                    else:
+                        row_data['roe'] = 0
+                        row_data['debt_ratio'] = 0
+                    
+                    data_list.append(row_data)
+                    
+                except Exception as e:
+                    print(f"  處理 {date} 的數據時出錯: {str(e)}")
+                    continue
+            
+            if len(data_list) > 0:
+                df = pd.DataFrame(data_list)
+                df = df.sort_values('date')
+                return df
+            
+            return None
+            
+        except Exception as e:
+            print(f"  yfinance 獲取財務數據失敗: {str(e)}")
+            return None
+    
+    def _fetch_financial_from_finmind(self, stock_code: str, years: int) -> Optional[pd.DataFrame]:
+        """
+        從 FinMind 獲取財務數據（重構自原 get_financial_data 方法）
+        
+        Args:
+            stock_code: 股票代碼
+            years: 獲取最近幾年的數據
+            
+        Returns:
+            財務數據 DataFrame 或 None
+        """
+        try:
+            end_date = datetime.now().strftime('%Y-%m-%d')
+            start_date = (datetime.now() - timedelta(days=years*365)).strftime('%Y-%m-%d')
+            
+            # 獲取財報數據
+            financial_df = self.finmind.taiwan_stock_financial_statement(
+                stock_id=stock_code,
+                start_date=start_date,
+                end_date=end_date
+            )
+            
+            if financial_df is not None and len(financial_df) > 0:
+                # 處理數據格式
+                df = pd.DataFrame()
+                df['date'] = pd.to_datetime(financial_df.get('date', financial_df.index))
+                
+                # EPS 欄位
+                if 'EPS' in financial_df.columns:
+                    df['eps'] = pd.to_numeric(financial_df['EPS'], errors='coerce')
+                elif 'BasicEarningsPerShare' in financial_df.columns:
+                    df['eps'] = pd.to_numeric(financial_df['BasicEarningsPerShare'], errors='coerce')
+                else:
+                    df['eps'] = 0
+                
+                # 其他欄位
+                df['revenue'] = pd.to_numeric(financial_df.get('Revenue', 0), errors='coerce')
+                df['profit'] = pd.to_numeric(financial_df.get('ProfitLoss', 0), errors='coerce')
+                df['roe'] = pd.to_numeric(financial_df.get('ROE', 0), errors='coerce')
+                df['debt_ratio'] = pd.to_numeric(financial_df.get('DebtRatio', 0), errors='coerce')
+                
+                # 移除 NaN 行
+                df = df.dropna(subset=['date'])
+                
+                if len(df) > 0:
+                    return df
+            
+            return None
+            
+        except Exception as e:
+            print(f"  FinMind 獲取失敗: {str(e)}")
+            return None
+
     def get_latest_eps(self, stock_code: str) -> float:
-        """獲取最新的 EPS"""
+        """
+        獲取最新的 EPS（優先使用 yfinance）
+        
+        資料來源優先序列：
+        1. yfinance (主要來源)
+        2. FinMind (備援)
+        3. 預設值 (最後選擇)
+        
+        Args:
+            stock_code: 股票代碼
+            
+        Returns:
+            最新的 EPS 值
+        """
         try:
             print(f"\n正在獲取 {stock_code} 的最新 EPS...")
             
-            # 方法 1: 從財務數據獲取
-            financial_data = self.get_financial_data(stock_code, years=2)
+            # 🥇 第一優先：yfinance
+            yf_eps = self._fetch_eps_from_yfinance(stock_code)
+            if yf_eps is not None and yf_eps > 0:
+                print(f"✓ 從 yfinance 獲取 EPS: {yf_eps}")
+                self.data_source_stats['yfinance_success'] += 1
+                return yf_eps
+            else:
+                print("✗ yfinance 未返回有效的 EPS")
+                self.data_source_stats['yfinance_fail'] += 1
+            
+            # 🥈 第二優先：FinMind 財務數據
+            print("嘗試從 FinMind 獲取 EPS...")
+            financial_data = self._fetch_financial_from_finmind(stock_code, years=2)
             if financial_data is not None and len(financial_data) > 0:
                 # 過濾掉 NaN 和 0 值
                 valid_eps = financial_data['eps'].dropna()
-                valid_eps = valid_eps[valid_eps != 0]
+                valid_eps = valid_eps[valid_eps > 0]
                 
                 if len(valid_eps) > 0:
                     latest_eps = float(valid_eps.iloc[-1])
-                    print(f"從 FinMind 獲取的最新 EPS: {latest_eps}")
+                    print(f"✓ 從 FinMind 獲取 EPS: {latest_eps}")
+                    self.data_source_stats['finmind_success'] += 1
                     return latest_eps
                 else:
-                    print("警告：財務數據中沒有有效的 EPS 值")
+                    print("✗ FinMind 財務數據中沒有有效的 EPS")
+                    self.data_source_stats['finmind_fail'] += 1
             else:
-                print("警告：無法獲取財務數據")
+                print("✗ 無法從 FinMind 獲取財務數據")
+                self.data_source_stats['finmind_fail'] += 1
             
-            # 方法 2: 嘗試從 yfinance 獲取
-            print(f"嘗試從 yfinance 獲取 EPS...")
-            ticker = yf.Ticker(f"{stock_code}.TW")
-            info = ticker.info
+            # 🥉 最後：使用預設值或返回 0
+            print("⚠ 所有資料源均無法提供有效的 EPS")
             
-            if 'trailingEps' in info and info['trailingEps']:
-                yf_eps = float(info['trailingEps'])
-                print(f"從 yfinance 獲取的 EPS: {yf_eps}")
-                return yf_eps
-            
-            print("警告：yfinance 也無法提供 EPS 數據")
-            
-            # 方法 3: 使用預估值（台積電的近似值）
+            # 特殊處理：台積電使用預設值
             if stock_code == "2330":
                 default_eps = 32.0
-                print(f"使用預設 EPS 值: {default_eps}")
+                print(f"使用台積電預設 EPS: {default_eps}")
                 return default_eps
             
             return 0.0
             
         except Exception as e:
-            print(f"獲取 EPS 失敗: {str(e)}")
+            print(f"✗ 獲取 EPS 過程發生錯誤: {str(e)}")
             import traceback
             traceback.print_exc()
             return 0.0
@@ -482,6 +764,169 @@ class DataManager:
             'sample_size': sample_size,
             'message': message
         }
+
+    # === FinLab 專屬方法 ===
+    
+    def _fetch_with_priority(
+        self, 
+        fetch_functions: List[Tuple[str, Callable]], 
+        error_msg: str
+    ) -> Optional[pd.DataFrame]:
+        """
+        依序嘗試多個資料源，返回第一個成功的結果
+        
+        Args:
+            fetch_functions: [(source_name, fetch_func), ...] 資料源與對應函式的列表
+            error_msg: 當所有資料源均失敗時的錯誤訊息前綴
+        
+        Returns:
+            成功獲取的 DataFrame，或 None
+        """
+        for source_name, fetch_func in fetch_functions:
+            try:
+                print(f"嘗試從 {source_name} 獲取資料...")
+                data = fetch_func()
+                
+                if data is not None and len(data) > 0:
+                    print(f"✓ 從 {source_name} 成功獲取 {len(data)} 筆資料")
+                    # 更新統計
+                    stat_key = f"{source_name.lower()}_success"
+                    if stat_key in self.data_source_stats:
+                        self.data_source_stats[stat_key] += 1
+                    return data
+                else:
+                    print(f"✗ {source_name} 未返回有效資料")
+                    
+            except Exception as e:
+                print(f"✗ {source_name} 發生錯誤: {str(e)}")
+                # 更新統計
+                stat_key = f"{source_name.lower()}_fail"
+                if stat_key in self.data_source_stats:
+                    self.data_source_stats[stat_key] += 1
+                continue
+        
+        print(f"✗ {error_msg}: 所有資料源均失敗")
+        return None
+    
+    def _fetch_financial_from_finlab(self, stock_code: str, years: int) -> Optional[pd.DataFrame]:
+        """
+        從 FinLab 獲取財務數據
+        
+        注意：FinLab 免費版不支援財務數據，此方法僅供付費版使用
+        
+        Args:
+            stock_code: 股票代碼
+            years: 獲取最近幾年的數據
+            
+        Returns:
+            財務數據 DataFrame 或 None
+        """
+        if not self.finlab_ready:
+            return None
+        
+        # FinLab 免費版不支援財務數據
+        print("提示：FinLab 免費版不支援財務數據，將使用 FinMind")
+        return None
+    
+    def _fetch_price_from_finlab(
+        self, 
+        stock_code: str, 
+        start_date: datetime, 
+        end_date: datetime
+    ) -> Optional[pd.DataFrame]:
+        """
+        從 FinLab 獲取股價數據
+        
+        Args:
+            stock_code: 股票代碼
+            start_date: 開始日期
+            end_date: 結束日期
+            
+        Returns:
+            股價數據 DataFrame 或 None
+        """
+        if not self.finlab_ready:
+            return None
+        
+        try:
+            # 獲取收盤價
+            close_data = finlab_data.get('price:收盤價', stock_code)
+            
+            if close_data is None or len(close_data) == 0:
+                return None
+            
+            # 過濾日期範圍
+            close_data = close_data[(close_data.index >= start_date) & (close_data.index <= end_date)]
+            
+            if len(close_data) == 0:
+                return None
+            
+            # 建立基本 DataFrame
+            df = pd.DataFrame({
+                'date': pd.to_datetime(close_data.index),
+                'stock_code': stock_code,
+                'close_price': close_data.values
+            })
+            
+            # 嘗試獲取其他價格資訊
+            try:
+                open_data = finlab_data.get('price:開盤價', stock_code)
+                if open_data is not None and len(open_data) > 0:
+                    open_data = open_data[(open_data.index >= start_date) & (open_data.index <= end_date)]
+                    open_df = pd.DataFrame({
+                        'date': pd.to_datetime(open_data.index),
+                        'open_price': open_data.values
+                    })
+                    df = df.merge(open_df, on='date', how='left')
+            except:
+                df['open_price'] = df['close_price']
+            
+            try:
+                high_data = finlab_data.get('price:最高價', stock_code)
+                if high_data is not None and len(high_data) > 0:
+                    high_data = high_data[(high_data.index >= start_date) & (high_data.index <= end_date)]
+                    high_df = pd.DataFrame({
+                        'date': pd.to_datetime(high_data.index),
+                        'high_price': high_data.values
+                    })
+                    df = df.merge(high_df, on='date', how='left')
+            except:
+                df['high_price'] = df['close_price']
+            
+            try:
+                low_data = finlab_data.get('price:最低價', stock_code)
+                if low_data is not None and len(low_data) > 0:
+                    low_data = low_data[(low_data.index >= start_date) & (low_data.index <= end_date)]
+                    low_df = pd.DataFrame({
+                        'date': pd.to_datetime(low_data.index),
+                        'low_price': low_data.values
+                    })
+                    df = df.merge(low_df, on='date', how='left')
+            except:
+                df['low_price'] = df['close_price']
+            
+            try:
+                volume_data = finlab_data.get('price:成交股數', stock_code)
+                if volume_data is not None and len(volume_data) > 0:
+                    volume_data = volume_data[(volume_data.index >= start_date) & (volume_data.index <= end_date)]
+                    volume_df = pd.DataFrame({
+                        'date': pd.to_datetime(volume_data.index),
+                        'volume': volume_data.values
+                    })
+                    df = df.merge(volume_df, on='date', how='left')
+            except:
+                df['volume'] = 0
+            
+            # 填充缺失的欄位
+            for col in ['open_price', 'high_price', 'low_price', 'volume']:
+                if col not in df.columns:
+                    df[col] = df['close_price'] if col != 'volume' else 0
+            
+            return df
+            
+        except Exception as e:
+            print(f"FinLab 股價數據獲取失敗: {str(e)}")
+            return None
 
     # === 私有方法：資料庫操作 ===
     

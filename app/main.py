@@ -14,6 +14,7 @@ from dcf_calculator import DCFCalculator
 from data_manager import DataManager
 from backtest import BacktestEngine
 from risk_analysis import RiskAnalyzer
+from report_generator import ReportGenerator
 
 
 # 頁面配置
@@ -872,6 +873,102 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
                 """
                 
                 st.markdown(summary_text)
+                
+                # 匯出報告區
+                st.markdown("---")
+                st.markdown("## 📥 匯出報告")
+                
+                # 初始化報告生成器（如果尚未初始化）
+                if 'report_generator' not in st.session_state:
+                    st.session_state.report_generator = ReportGenerator()
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    # 生成 Excel 報告
+                    try:
+                        excel_buffer = st.session_state.report_generator.generate_excel_report(
+                            stock_code=stock_code,
+                            stock_name=stock_name,
+                            dcf_result=dcf_result,
+                            risk_report=risk_report,
+                            current_price=current_price,
+                            current_eps=current_eps,
+                            investment_amount=investment_amount
+                        )
+                        
+                        st.download_button(
+                            label="📊 下載 Excel 報告",
+                            data=excel_buffer,
+                            file_name=f"{stock_code}_{stock_name}_分析報告_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+                    except Exception as e:
+                        st.error(f"Excel 生成失敗: {str(e)}")
+                
+                with col2:
+                    # 生成 PDF 報告
+                    try:
+                        # 準備圖表圖片（可選）
+                        chart_images = {}
+                        
+                        # 轉換現金流圖表為圖片
+                        try:
+                            cash_flow_df = pd.DataFrame({
+                                '年度': [f"第{i+1}年" for i in range(len(dcf_result['cash_flows']))],
+                                '預測現金流': dcf_result['cash_flows'],
+                                '現值': dcf_result['present_values']
+                            })
+                            
+                            fig = go.Figure()
+                            fig.add_trace(go.Bar(
+                                x=cash_flow_df['年度'],
+                                y=cash_flow_df['預測現金流'],
+                                name='預測現金流',
+                                marker_color='lightblue'
+                            ))
+                            fig.add_trace(go.Bar(
+                                x=cash_flow_df['年度'],
+                                y=cash_flow_df['現值'],
+                                name='現值',
+                                marker_color='darkblue'
+                            ))
+                            
+                            fig.update_layout(
+                                title="未來現金流與現值",
+                                xaxis_title="年度",
+                                yaxis_title="金額",
+                                barmode='group',
+                                height=400
+                            )
+                            
+                            chart_img = st.session_state.report_generator.save_plotly_chart_as_image(fig)
+                            if chart_img:
+                                chart_images['cash_flow_chart'] = chart_img
+                        except Exception as chart_error:
+                            st.warning(f"圖表轉換失敗: {str(chart_error)}")
+                        
+                        pdf_buffer = st.session_state.report_generator.generate_pdf_report(
+                            stock_code=stock_code,
+                            stock_name=stock_name,
+                            dcf_result=dcf_result,
+                            risk_report=risk_report,
+                            current_price=current_price,
+                            current_eps=current_eps,
+                            investment_amount=investment_amount,
+                            chart_images=chart_images
+                        )
+                        
+                        st.download_button(
+                            label="📄 下載 PDF 報告",
+                            data=pdf_buffer,
+                            file_name=f"{stock_code}_{stock_name}_分析報告_{datetime.now().strftime('%Y%m%d')}.pdf",
+                            mime="application/pdf",
+                            use_container_width=True
+                        )
+                    except Exception as e:
+                        st.error(f"PDF 生成失敗: {str(e)}")
                 
                 # 免責聲明
                 st.markdown("---")
