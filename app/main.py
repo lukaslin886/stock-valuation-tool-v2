@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 from dcf_calculator import DCFCalculator
-from data_manager import DataManager
+from data import DataManager
 from backtest import BacktestEngine
 from risk_analysis import RiskAnalyzer
 from report_generator import ReportGenerator

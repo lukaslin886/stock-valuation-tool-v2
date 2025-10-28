@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 import numpy as np
 from scipy import stats
-from data_manager import DataManager
+from data import DataManager
 
 
 class RiskAnalyzer:

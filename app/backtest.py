@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import pandas as pd
 import numpy as np
-from dcf_calculator import DCFCalculator
-from data_manager import DataManager
+
+from data import DataManager
 
 
 class BacktestEngine:
