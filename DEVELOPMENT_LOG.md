@@ -748,7 +748,157 @@ openpyxl>=3.1.2        # Excel 處理（已有）
 
 ---
 
-**最後更新**: 2025-10-28 15:51  
-**文檔版本**: 1.3.0  
+**最後更新**: 2025-10-28 16:53  
+**文檔版本**: 1.4.0  
 **專案狀態**: 穩定運行 ✅  
 **資料來源優先序**: yfinance → FinMind → 快取
+
+---
+
+### v1.4.0 (2025-10-28) - 資料層模組化重構
+- ✅ 完成資料層架構模組化重構
+- ✅ 實作抽象基礎類別（Strategy Pattern）
+- ✅ 建立獨立的資料來源模組
+- ✅ 建立獨立的快取後端模組
+- ✅ 為未來擴展打下良好基礎
+
+#### 資料層模組化重構詳細記錄 (2025-10-28)
+
+**重構目標**: 
+將原本單一的 `data_manager.py`（~900行）重構為清晰的模組化架構，為未來新增資料源（如 TWSE OpenAPI、XBRL）做準備。
+
+**設計模式**: Strategy Pattern（策略模式）
+
+**新架構概覽**:
+```
+app/data/
+├── sources/                    # 資料來源模組
+│   ├── __init__.py
+│   ├── base.py                 # DataSource 抽象基礎類別
+│   ├── yfinance_source.py      # YFinance 資料源實作
+│   └── finmind_source.py       # FinMind 資料源實作
+├── cache/                      # 快取後端模組
+│   ├── __init__.py
+│   ├── base.py                 # CacheBackend 抽象基礎類別
+│   └── sqlite_cache.py         # SQLite 快取實作
+└── __init__.py                 # 統一匯出介面
+```
+
+**核心設計**:
+
+1. **DataSource 抽象類別** (`sources/base.py`)
+   - 定義所有資料來源必須實作的介面
+   - 統一的方法簽章：
+     * `get_stock_price()` - 獲取股價
+     * `get_financial_data()` - 獲取財務數據
+     * `get_latest_eps()` - 獲取最新 EPS
+     * `get_stock_info()` - 獲取股票資訊
+     * `get_all_stocks()` - 獲取股票清單（可選）
+   - 狀態管理：`is_ready()`, `is_available`
+   - 清晰的錯誤處理機制
+
+2. **YFinanceSource** (`sources/yfinance_source.py`)
+   - 完整實作 DataSource 介面
+   - 保留原有的所有 yfinance 邏輯
+   - 台股代碼標準化（.TW / .TWO 後綴）
+   - 多層 EPS 獲取策略（5種方法）
+   - 完整的財務報表解析
+
+3. **FinMindSource** (`sources/finmind_source.py`)
+   - 完整實作 DataSource 介面
+   - 封裝 FinMind API 呼叫
+   - 支援 API Token 認證
+   - 標準化資料格式輸出
+   - 動態欄位映射處理
+
+4. **CacheBackend 抽象類別** (`cache/base.py`)
+   - 定義快取後端必須實作的介面
+   - 統一的快取操作方法：
+     * `get_*()` / `save_*()` - 讀寫操作
+     * `is_cache_valid()` - 快取有效性檢查
+     * `clear_cache()` - 清除快取
+   - 支援多種快取類型：price, financial, info, stocks
+
+5. **SQLiteCache** (`cache/sqlite_cache.py`)
+   - 完整實作 CacheBackend 介面
+   - 保留原有的所有 SQLite 邏輯
+   - 自動建表與索引管理
+   - 快取過期時間控制
+   - 完整的錯誤處理
+
+**測試驗證**:
+
+建立 `test_modular_data_layer.py` 測試檔案，驗證：
+- ✅ YFinanceSource 初始化與資料獲取
+- ✅ FinMindSource 初始化與資料獲取
+- ✅ SQLiteCache 讀寫操作
+- ✅ 所有模組測試通過（100% 成功率）
+
+測試結果：
+```
+測試結果摘要
+YFinance: ✓ 通過
+FinMind: ✓ 通過
+SQLite Cache: ✓ 通過
+
+總體結果: ✓ 全部通過
+```
+
+**技術優勢**:
+
+1. **清晰的職責分離**
+   - 每個類別只負責一個功能
+   - 資料來源與快取層完全解耦
+   - 易於理解、維護和測試
+
+2. **高度可擴展性**
+   - 新增資料源只需實作 DataSource 介面
+   - 新增快取後端只需實作 CacheBackend 介面
+   - 不影響現有程式碼
+
+3. **未來擴展容易**
+   - TWSE OpenAPI → 建立 `TWSESource`
+   - XBRL 資料 → 建立 `XBRLSource`
+   - Parquet 快取 → 建立 `ParquetCache`
+   - Redis 快取 → 建立 `RedisCache`
+
+4. **統一的錯誤處理**
+   - 每個資料源獨立處理錯誤
+   - 清晰的日誌輸出
+   - 不會因單一來源失敗而影響整體
+
+5. **完整的向下相容**
+   - 原有的 `data_manager.py` 保持不變
+   - 新架構可與舊程式碼並存
+   - 漸進式遷移策略
+
+**Git 記錄**:
+
+```bash
+# 基準版本
+commit 24ba350 - chore: v1.3.0 穩定版本（重構前基準點）
+tag: v1.3.0
+
+# 重構分支
+branch: refactor/data-layer-modularization
+
+# 重構 commit
+commit 704f47c - refactor: 實作模組化資料層架構
+```
+
+**檔案變更統計**:
+- 新增檔案：9 個
+- 新增程式碼：~2000+ 行
+- 測試覆蓋：3 個主要模組
+
+**後續規劃**:
+
+**Phase 2 - 統一資料管理器**（下一階段）:
+- 建立新的 `DataManagerV2`
+- 整合所有資料來源與快取
+- 實作智能備援策略
+- 資料品質評分系統
+
+**Phase 3 - 新資料源整合**（未來）:
+1. **TWSE OpenAPI** (台灣證券交易所)
+   - Base URL: `https://openapi.twse.com.tw
