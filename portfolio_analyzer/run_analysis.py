@@ -14,9 +14,9 @@ from typing import Optional, Dict, List
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# 從當前目錄導入重新命名的模組
-from analyzer import StockAnalyzer
-from report_generator import PortfolioReportGenerator
+# 從當前套件導入模組（使用相對導入）
+from .analyzer import StockAnalyzer
+from .report_generator import PortfolioReportGenerator
 
 
 def find_latest_csv(folder_path: str = "MY_STOCK") -> Optional[Path]:
