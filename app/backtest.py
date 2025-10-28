@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 import numpy as np
 
+from dcf_calculator import DCFCalculator
 from data import DataManager
 
 

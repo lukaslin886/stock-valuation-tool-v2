@@ -186,7 +186,7 @@ class FinMindSource(DataSource):
             info = self.data_loader.taiwan_stock_info()
             if info is not None and len(info) > 0:
                 return pd.DataFrame({
-                    'stock_code': info['stock_id'],
+                    'stock_id': info['stock_id'],
                     'stock_name': info['stock_name']
                 })
             

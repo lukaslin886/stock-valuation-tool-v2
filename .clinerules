@@ -1,0 +1,286 @@
+# Stock Valuation Tool - Workspace Rules
+
+## 專案概述
+台股 DCF 估值工具 - 基於現金流量折現法的股票內在價值分析系統
+
+---
+
+## 待辦清單管理 (TODO Management)
+
+### TODO.md 維護規範
+
+1. **檔案位置**: `TODO.md` 位於專案根目錄
+2. **更新時機**:
+   - 完成任務後立即更新狀態（標記為 `[x]`）
+   - 新增功能需求時同步更新
+   - 每週檢視進度並調整優先級
+   - 版本發布前確認完成項目
+
+3. **項目編號規則**:
+   - Phase 1: `P1-01` 至 `P1-12` (短期，1-2週)
+   - Phase 2: `P2-01` 至 `P2-18` (中期，1-3個月)
+   - Phase 3: `P3-01` 至 `P3-28` (長期，3-6個月)
+   - Phase 4: `P4-01` 至 `P4-13` (維運，持續進行)
+
+4. **Git Commit 規範**:
+   - Commit 訊息應標註相關 TODO 項目
+   - 格式：`[P1-01] 增加更多股票的預設 EPS 值`
+   - 完成多項任務：`[P1-01,P1-02] 實作資料品質提升功能`
+
+5. **優先級調整**:
+   - 🔴 高優先級項目應優先處理
+   - 🟡 中優先級項目視情況調整
+   - 🟢 低優先級項目可延後處理
+
+---
+
+## 開發流程 (Development Workflow)
+
+### 1. 任務選擇
+- 從 `TODO.md` 選擇適當的任務
+- 優先處理高優先級項目
+- 考慮任務間的依賴關係
+
+### 2. 開發過程
+- 在 `DEVELOPMENT_LOG.md` 記錄詳細開發過程
+- 包含：問題、解決方案、技術決策、測試結果
+- 遇到重大問題時更新「已知限制」區塊
+
+### 3. 完成任務
+- 更新 `TODO.md` 狀態（標記為 `[x]`）
+- 在 `DEVELOPMENT_LOG.md` 添加版本更新記錄
+- 建立 Git commit 並標註 TODO 項目編號
+- 必要時更新 `README.md`
+
+### 4. 版本發布
+- 確認所有相關 TODO 項目已完成
+- 更新版本號（遵循語義化版本）
+- 更新 `DEVELOPMENT_LOG.md` 版本區塊
+- 建立 Git tag
+
+---
+
+## 程式碼規範 (Coding Standards)
+
+### 檔案組織
+- 所有應用程式程式碼位於 `app/` 目錄
+- 資料來源模組：`app/data/sources/`
+- 快取模組：`app/data/cache/`
+- 測試檔案：專案根目錄，命名為 `test_*.py`
+
+### 命名慣例
+- 類別：PascalCase (例：`DataManager`, `YFinanceSource`)
+- 函式/方法：snake_case (例：`get_stock_price`, `calculate_dcf_value`)
+- 常數：UPPER_SNAKE_CASE (例：`MAX_RETRIES`, `API_TIMEOUT`)
+- 私有方法：前綴 `_` (例：`_fetch_data`, `_validate_input`)
+
+### 文件化
+- 所有公開 API 必須有 docstring
+- 複雜邏輯應添加註解說明
+- 使用繁體中文撰寫註解與文件
+
+---
+
+## 資料來源管理 (Data Source Management)
+
+### 當前架構
+1. **主要來源**: YFinance
+2. **備援來源**: FinMind
+3. **輔助來源**: FinLab (價格數據)
+4. **快取層**: SQLite
+
+### 新增資料來源規範
+
+當需要新增資料來源時：
+
+1. **建立資料來源類別**:
+   - 檔案位置：`app/data/sources/[source_name]_source.py`
+   - 繼承：`DataSource` 基礎類別（位於 `app/data/sources/base.py`）
+   - 實作所有必要方法：
+     * `get_stock_price()`
+     * `get_financial_data()`
+     * `get_latest_eps()`
+     * `get_stock_info()`
+     * `get_all_stocks()` (可選)
+
+2. **測試驗證**:
+   - 建立測試檔案：`test_[source_name]_source.py`
+   - 驗證資料品質與完整性
+   - 確認與其他來源相容性
+
+3. **整合到系統**:
+   - 更新 `DataManager` 或 `DataManagerV2`
+   - 設定資料來源優先序
+   - 更新文件說明
+
+4. **記錄更新**:
+   - 更新 `DEVELOPMENT_LOG.md`
+   - 標註相關 TODO 項目為完成
+   - 更新 `README.md` 資料來源說明
+
+---
+
+## 測試規範 (Testing Standards)
+
+### 測試檔案命名
+- 單元測試：`test_[module_name].py`
+- 整合測試：`test_integration_[feature].py`
+- 資料層測試：`test_[source]_source.py`
+
+### 測試覆蓋目標
+- 核心模組：> 80%
+- 資料來源：> 70%
+- 工具函式：> 90%
+
+### 測試執行
+```bash
+# 執行所有測試
+pytest
+
+# 執行特定測試
+pytest test_data_manager.py
+
+# 生成覆蓋率報告
+pytest --cov=app --cov-report=html
+```
+
+---
+
+## 版本控制規範 (Version Control)
+
+### 分支策略
+- `main`: 穩定版本
+- `develop`: 開發版本
+- `feature/[feature-name]`: 功能開發分支
+- `fix/[issue-description]`: 問題修復分支
+
+### Commit 訊息格式
+遵循 Conventional Commits：
+
+```
+[TODO-ID] type: description
+
+type 類型：
+- feat: 新功能
+- fix: 修復問題
+- docs: 文件更新
+- refactor: 重構程式碼
+- test: 測試相關
+- chore: 其他雜項
+
+範例：
+[P1-01] feat: 增加前50大股票的預設 EPS 值
+[P2-15] test: 新增 DataManagerV2 單元測試
+[P3-03] feat: 實作 TWSESource 資料來源
+```
+
+### Tag 命名
+- 版本 tag: `v1.5.0`, `v2.0.0`
+- 重大里程碑: `milestone-phase2-complete`
+
+---
+
+## 文件維護規範 (Documentation)
+
+### 必須維護的文件
+1. **README.md**: 專案介紹、安裝說明、快速開始
+2. **DEVELOPMENT_LOG.md**: 開發日誌、版本歷史、技術決策
+3. **TODO.md**: 開發待辦清單、進度追蹤
+4. **requirements.txt**: Python 依賴套件
+5. **.env.example**: 環境變數範本
+
+### 文件更新時機
+- 新增功能：更新 README.md 和 DEVELOPMENT_LOG.md
+- 修復問題：在 DEVELOPMENT_LOG.md 記錄
+- 完成任務：更新 TODO.md 狀態
+- 新增依賴：更新 requirements.txt
+- 版本發布：更新所有相關文件
+
+---
+
+## 環境變數管理 (Environment Variables)
+
+### 必要的環境變數
+```bash
+# FinMind API
+FINMIND_TOKEN=your_token_here
+
+# FinLab API (可選)
+FINLAB_API_TOKEN=your_token_here
+
+# TWSE OpenAPI (未來)
+TWSE_API_KEY=your_key_here
+```
+
+### 安全規範
+- ❌ 絕對不要將 `.env` 檔案提交到 Git
+- ✅ 保持 `.env.example` 為範本
+- ✅ 在 `.gitignore` 中排除 `.env`
+- ✅ 使用 `python-dotenv` 載入環境變數
+
+---
+
+## 專案特定規則 (Project-Specific Rules)
+
+### 負成長率處理 (v1.5.0+)
+- 成長率輸入範圍：**-50% 到 50%**
+- 負成長時顯示警告訊息
+- 儲存時限制在合理範圍內
+
+### 資料來源備援策略
+1. 優先使用 YFinance
+2. 失敗時切換到 FinMind
+3. 價格數據可選用 FinLab
+4. 最終使用快取或預設值
+
+### 快取策略
+- 股價快取：1小時
+- 財報快取：7天
+- 股票清單：1天
+- 自動清理過期快取
+
+---
+
+## AI 協作規則 (AI Collaboration Rules)
+
+### 使用 Cline 時
+1. **閱讀順序**: 
+   - 先閱讀 `TODO.md` 了解待辦事項
+   - 再閱讀 `DEVELOPMENT_LOG.md` 了解開發歷史
+   - 最後閱讀 `README.md` 了解專案概況
+
+2. **任務執行**:
+   - 從 TODO.md 選擇任務
+   - 在 task_progress 中追蹤進度
+   - 完成後更新 TODO.md 和 DEVELOPMENT_LOG.md
+
+3. **程式碼修改**:
+   - 遵循現有的程式碼風格
+   - 保持模組化架構
+   - 添加適當的註解與文件
+
+4. **問題處理**:
+   - 詳細記錄問題與解決方案
+   - 更新相關文件
+   - 標註相關 TODO 項目
+
+---
+
+## 參考資源 (References)
+
+### 專案文件
+- [README.md](./README.md) - 專案說明
+- [DEVELOPMENT_LOG.md](./DEVELOPMENT_LOG.md) - 開發日誌
+- [TODO.md](./TODO.md) - 待辦清單
+
+### 技術文件
+- [Streamlit Docs](https://docs.streamlit.io/)
+- [FinMind API](https://finmindtrade.com/)
+- [yfinance Docs](https://pypi.org/project/yfinance/)
+- [FinLab Docs](https://doc.finlab.tw/)
+
+---
+
+**最後更新**: 2025-10-28  
+**版本**: v1.5.0  
+**維護者**: AI 協作開發

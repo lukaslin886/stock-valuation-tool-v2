@@ -305,7 +305,7 @@ class SQLiteCache(CacheBackend):
             conn = sqlite3.connect(self.db_path)
             
             df = pd.read_sql_query('''
-                SELECT stock_code, stock_name
+                SELECT stock_code AS stock_id, stock_name
                 FROM stock_info
                 ORDER BY stock_code
             ''', conn)
@@ -333,12 +333,15 @@ class SQLiteCache(CacheBackend):
             update_time = datetime.now()
             
             for _, row in data.iterrows():
+                # 支援 stock_id 或 stock_code 欄位名稱
+                stock_code = row.get('stock_id') or row.get('stock_code')
+                
                 cursor.execute('''
                     INSERT OR REPLACE INTO stock_info
                     (stock_code, stock_name, industry, market, update_time)
                     VALUES (?, ?, ?, ?, ?)
                 ''', (
-                    row.get('stock_code'),
+                    stock_code,
                     row.get('stock_name'),
                     '',  # industry 可以之後補充
                     '',  # market 可以之後補充

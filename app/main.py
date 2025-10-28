@@ -17,6 +17,29 @@ from risk_analysis import RiskAnalyzer
 from report_generator import ReportGenerator
 
 
+def get_recommendation_short_name(recommendation: str) -> str:
+    """
+    將投資建議轉換為簡短名稱，用於檔案命名
+    
+    Args:
+        recommendation: 完整的投資建議文字
+        
+    Returns:
+        簡短的投資建議名稱
+    """
+    # 注意：必須先檢查「不推薦」和「不建議」，避免被「推薦」子字串誤判
+    if "不推薦" in recommendation or "不建議" in recommendation:
+        return "不建議"
+    elif "強烈推薦" in recommendation:
+        return "強烈推薦"
+    elif "推薦" in recommendation:
+        return "推薦買入"
+    elif "考慮" in recommendation:
+        return "可考慮"
+    else:
+        return "不建議"
+
+
 # 頁面配置
 st.set_page_config(
     page_title="台股 DCF 估值工具",
@@ -123,9 +146,16 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
         suggested_gr2 = st.session_state.get('suggested_gr2', 12.0)
         growth_message = st.session_state.get('growth_message', '')
         
-        # 顯示數據來源說明
+        # 確保值在合理範圍內（-50% 到 50%）
+        suggested_gr1 = max(-50.0, min(50.0, suggested_gr1))
+        suggested_gr2 = max(-50.0, min(50.0, suggested_gr2))
+        
+        # 顯示數據來源說明（負成長時顯示警告）
         if growth_message:
-            st.info(f"📊 {growth_message}")
+            if suggested_gr1 < 0 or suggested_gr2 < 0:
+                st.warning(f"⚠️ {growth_message}")
+            else:
+                st.info(f"📊 {growth_message}")
         
         # 成長率（1-5年）- 滑桿 + 精確輸入
         st.markdown("**成長率（1-5年）**")
@@ -144,12 +174,13 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
         with input_col1:
             growth_rate_1_input = st.number_input(
                 "精確值 (%)",
-                min_value=0.0,
+                min_value=-50.0,
                 max_value=50.0,
                 value=float(suggested_gr1),
                 step=0.1,
                 format="%.1f",
-                key="gr1_input"
+                key="gr1_input",
+                help="可輸入負值表示衰退"
             )
         growth_rate_1 = growth_rate_1_input / 100
         
@@ -170,12 +201,13 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
         with input_col2:
             growth_rate_2_input = st.number_input(
                 "精確值 (%)",
-                min_value=0.0,
+                min_value=-50.0,
                 max_value=30.0,
                 value=float(suggested_gr2),
                 step=0.1,
                 format="%.1f",
-                key="gr2_input"
+                key="gr2_input",
+                help="可輸入負值表示衰退"
             )
         growth_rate_2 = growth_rate_2_input / 100
         
@@ -231,11 +263,20 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
                 # 計算建議成長率
                 growth_rates = st.session_state.data_manager.calculate_historical_growth_rate(stock_code)
                 
-                # 儲存到 session state 供參數設定使用
-                st.session_state['suggested_gr1'] = growth_rates['growth_rate_1_5'] * 100
-                st.session_state['suggested_gr2'] = growth_rates['growth_rate_6_10'] * 100
+                # 計算原始值
+                gr1_raw = growth_rates['growth_rate_1_5'] * 100
+                gr2_raw = growth_rates['growth_rate_6_10'] * 100
+                
+                # 儲存到 session state 供參數設定使用（限制在合理範圍內）
+                st.session_state['suggested_gr1'] = max(-50.0, min(50.0, gr1_raw))
+                st.session_state['suggested_gr2'] = max(-50.0, min(50.0, gr2_raw))
                 st.session_state['growth_data_quality'] = growth_rates['data_quality']
-                st.session_state['growth_message'] = growth_rates['message']
+                
+                # 修改訊息，如果是負成長則特別標註
+                base_message = growth_rates['message']
+                if gr1_raw < 0 or gr2_raw < 0:
+                    base_message = f"注意：此股票呈現負成長（衰退）趨勢。{base_message}"
+                st.session_state['growth_message'] = base_message
                     
             except Exception as e:
                 st.error(f"數據獲取失敗: {str(e)}")
@@ -382,12 +423,13 @@ def show_backtest(stock_code: str, stock_name: str):
         with bt_input_col1:
             growth_rate_1_input = st.number_input(
                 "精確值 (%)",
-                min_value=0.0,
+                min_value=-50.0,
                 max_value=50.0,
                 value=23.0,
                 step=0.1,
                 format="%.1f",
-                key="bt_gr1_input"
+                key="bt_gr1_input",
+                help="可輸入負值表示衰退"
             )
         growth_rate_1 = growth_rate_1_input / 100
     
@@ -411,12 +453,13 @@ def show_backtest(stock_code: str, stock_name: str):
         with bt_input_col2:
             growth_rate_2_input = st.number_input(
                 "精確值 (%)",
-                min_value=0.0,
+                min_value=-50.0,
                 max_value=30.0,
                 value=12.0,
                 step=0.1,
                 format="%.1f",
-                key="bt_gr2_input"
+                key="bt_gr2_input",
+                help="可輸入負值表示衰退"
             )
         growth_rate_2 = growth_rate_2_input / 100
     
@@ -897,10 +940,13 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
                             investment_amount=investment_amount
                         )
                         
+                        # 取得簡短投資建議用於檔名
+                        recommendation_short = get_recommendation_short_name(dcf_result['recommendation'])
+                        
                         st.download_button(
                             label="📊 下載 Excel 報告",
                             data=excel_buffer,
-                            file_name=f"{stock_code}_{stock_name}_分析報告_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                            file_name=f"{stock_code}_{stock_name}_{recommendation_short}_{datetime.now().strftime('%Y%m%d')}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             use_container_width=True
                         )
@@ -960,10 +1006,13 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
                             chart_images=chart_images
                         )
                         
+                        # 取得簡短投資建議用於檔名
+                        recommendation_short = get_recommendation_short_name(dcf_result['recommendation'])
+                        
                         st.download_button(
                             label="📄 下載 PDF 報告",
                             data=pdf_buffer,
-                            file_name=f"{stock_code}_{stock_name}_分析報告_{datetime.now().strftime('%Y%m%d')}.pdf",
+                            file_name=f"{stock_code}_{stock_name}_{recommendation_short}_{datetime.now().strftime('%Y%m%d')}.pdf",
                             mime="application/pdf",
                             use_container_width=True
                         )
