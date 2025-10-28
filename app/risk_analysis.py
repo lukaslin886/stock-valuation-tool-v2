@@ -27,7 +27,7 @@ class RiskAnalyzer:
         self,
         stock_code: str,
         confidence_level: float = 0.95,
-        holding_period: int = 1,
+        holding_period: int = 30,
         investment_amount: float = 100000
     ) -> Dict:
         """
