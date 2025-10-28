@@ -109,7 +109,7 @@ class DataManagerV2:
                 return cached_data
         
         # 2. 檢查 SQLite 快取
-        cached_data = self.cache.get_price_data(stock_code, start_date, end_date)
+        cached_data = self.cache.get_stock_price(stock_code, start_date, end_date)
         if cached_data is not None and len(cached_data) > 0:
             print(f"✓ 從 SQLite 快取獲取價格數據: {stock_code}")
             self._save_to_memory_cache(cache_key, cached_data)
@@ -126,7 +126,7 @@ class DataManagerV2:
         
         if data is not None and len(data) > 0:
             # 儲存到快取
-            self.cache.save_price_data(stock_code, data)
+            self.cache.save_stock_price(stock_code, data)
             self._save_to_memory_cache(cache_key, data)
             
             # 評估資料品質
