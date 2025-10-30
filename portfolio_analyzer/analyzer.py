@@ -16,20 +16,16 @@ sys.path.insert(0, str(project_root))
 from app.data import DataManager
 from app.dcf_calculator import DCFCalculator
 
+# 導入策略配置
+from . import config
+
 
 class StockAnalyzer:
     """持股分析器"""
     
-    # 保護名單：金融股代碼
-    FINANCIAL_STOCKS = [
-        '2801', '2809', '2834', '2867',  # 彰銀、台中銀、臺企銀、三商壽
-        '2881', '2882', '2883', '2884',  # 富邦金、國泰金、開發金、玉山金
-        '2885', '2886', '2887', '2889',  # 元大金、兆豐金、台新金、國票金
-        '2891', '2892'                    # 中信金、第一金
-    ]
-    
-    # 核心龍頭股代碼
-    CORE_STOCKS = ['2330', '2317']  # 台積電、鴻海
+    # 從配置檔載入保護名單
+    FINANCIAL_STOCKS = config.FINANCIAL_STOCKS
+    CORE_STOCKS = config.CORE_STOCKS
     
     def __init__(self):
         """初始化分析器"""
@@ -129,15 +125,32 @@ class StockAnalyzer:
         return_rate = row['報酬率']
         current_value = row.get('現值', 0)
         
+        # 從配置檔讀取篩選條件
+        profit_threshold = config.PROFIT_THRESHOLD
+        loss_threshold = config.LOSS_THRESHOLD
+        position_threshold = config.POSITION_THRESHOLD
+        
         # 篩選條件
-        if return_rate > 30:
+        if return_rate > profit_threshold:
             return True, f"獲利 {return_rate:.1f}%"
-        elif return_rate < -20:
+        elif return_rate < loss_threshold:
             return True, f"虧損 {return_rate:.1f}%"
-        elif current_value > 50000:
+        elif current_value > position_threshold:
             return True, f"重要部位 NT${current_value:,.0f}"
         
-        return False, "未達篩選標準"
+        # 明確列出不符合的條件
+        reasons = []
+        
+        # 報酬率條件
+        if loss_threshold <= return_rate <= profit_threshold:
+            reasons.append(f"報酬率 {return_rate:.1f}%（需 >{profit_threshold}% 或 <{loss_threshold}%）")
+        
+        # 部位條件
+        if current_value <= position_threshold:
+            reasons.append(f"部位 NT${current_value:,.0f}（需 >NT${position_threshold:,.0f}）")
+        
+        reason_text = "、".join(reasons) if reasons else "未達篩選標準"
+        return False, reason_text
     
     def analyze_single_stock(self, stock_code: str, stock_name: str, 
                            current_price: float, cost_price: float,
@@ -219,26 +232,35 @@ class StockAnalyzer:
         return_rate = analysis['return_rate']
         dcf_rec = analysis['dcf_recommendation']
         
+        # 從配置檔讀取賣出策略參數
+        protected_overvalue = config.PROTECTED_OVERVALUE
+        sell_a_overvalue = config.SELL_A_OVERVALUE
+        sell_a_profit = config.SELL_A_PROFIT
+        sell_b_overvalue = config.SELL_B_OVERVALUE
+        sell_b_profit_min = config.SELL_B_PROFIT_MIN
+        sell_b_profit_max = config.SELL_B_PROFIT_MAX
+        sell_b_loss = config.SELL_B_LOSS
+        
         # 保護名單特殊處理
         if stock_type == 'PROTECTED':
-            if valuation_gap >= 50:
+            if valuation_gap >= protected_overvalue:
                 return 'SELL', 'B', f'保護名單但嚴重高估 {valuation_gap:.1f}%'
             else:
                 return 'HOLD', 'C', '保護名單（長期持有）'
         
         # 一般股票判斷
         # 優先級A：強烈建議賣出
-        if valuation_gap >= 30 and return_rate >= 50 and '不建議' in dcf_rec:
+        if valuation_gap >= sell_a_overvalue and return_rate >= sell_a_profit and '不建議' in dcf_rec:
             return 'SELL', 'A', f'高估 {valuation_gap:.1f}% 且已獲利 {return_rate:.1f}%'
         
         # 優先級B：考慮賣出
-        if valuation_gap >= 15:
+        if valuation_gap >= sell_b_overvalue:
             return 'SELL', 'B', f'高估 {valuation_gap:.1f}%'
         
-        if 30 <= return_rate < 50 and '可考慮' in dcf_rec:
+        if sell_b_profit_min <= return_rate < sell_b_profit_max and '可考慮' in dcf_rec:
             return 'SELL', 'B', f'已獲利 {return_rate:.1f}% 且估值合理'
         
-        if return_rate < -30 and '不建議' in dcf_rec:
+        if return_rate < sell_b_loss and '不建議' in dcf_rec:
             return 'SELL', 'B', f'虧損 {return_rate:.1f}% 且DCF不建議（停損考慮）'
         
         # 續抱
@@ -249,6 +271,213 @@ class StockAnalyzer:
             return 'HOLD', 'C', f'估值合理（偏離 {valuation_gap:.1f}%）'
         
         return 'HOLD', 'C', '一般持有'
+    
+    def analyze_buy_opportunities_from_holdings(
+        self,
+        analysis_results: Dict,
+        holdings_df: pd.DataFrame,
+        total_portfolio_value: float
+    ) -> List[Dict]:
+        """
+        分析持股中的加碼機會
+        
+        Args:
+            analysis_results: analyze_portfolio 的分析結果
+            holdings_df: 持股資料 DataFrame
+            total_portfolio_value: 投資組合總值
+            
+        Returns:
+            加碼機會清單
+        """
+        print("\n[分析] 開始分析持股加碼機會...")
+        
+        buy_opportunities = []
+        
+        # 合併所有已分析的持股（持有建議 + 保護名單）
+        analyzed_stocks = (
+            analysis_results.get('hold_list', []) +
+            analysis_results.get('protected_list', [])
+        )
+        
+        # 從配置檔讀取加碼策略參數
+        MIN_UNDERVALUED = config.BUY_MIN_UNDERVALUED
+        MIN_UPSIDE_POTENTIAL = config.BUY_MIN_UPSIDE
+        STRONG_UNDERVALUED = config.BUY_STRONG_UNDERVALUED
+        STRONG_UPSIDE = config.BUY_STRONG_UPSIDE
+        MAX_POSITION_NORMAL = config.BUY_MAX_POSITION_NORMAL
+        MAX_POSITION_PROTECTED = config.BUY_MAX_POSITION_PROTECTED
+        MAX_LOSS_THRESHOLD = config.BUY_MAX_LOSS
+        BUY_A_UNDERVALUED = config.BUY_A_UNDERVALUED
+        BUY_A_POSITION = config.BUY_A_POSITION
+        BUY_B_UNDERVALUED = config.BUY_B_UNDERVALUED
+        BUY_B_POSITION = config.BUY_B_POSITION
+        IDEAL_PRICE_RATIO = config.BUY_IDEAL_PRICE_RATIO
+        
+        for stock in analyzed_stocks:
+            stock_code = stock['stock_code']
+            stock_name = stock['stock_name']
+            
+            # 1. 估值條件檢查
+            valuation_gap = stock.get('valuation_gap', 0)
+            upside_potential = stock.get('upside_potential', 0)
+            dcf_rec = stock.get('dcf_recommendation', '')
+            
+            # 靈活篩選邏輯：
+            # 1. 先檢查是否符合強條件（嚴重低估 OR 高潛在報酬）
+            # 2. 如果符合強條件之一，即使另一條件不足也通過
+            # 3. 如果都不符合強條件，才檢查是否同時滿足基本門檻
+            
+            is_strong_undervalued = valuation_gap < STRONG_UNDERVALUED
+            is_strong_upside = upside_potential > STRONG_UPSIDE
+            
+            # 如果不符合任何強條件，檢查基本門檻
+            if not (is_strong_undervalued or is_strong_upside):
+                # 基本門檻：必須同時滿足低估和潛在報酬
+                if valuation_gap > MIN_UNDERVALUED or upside_potential < MIN_UPSIDE_POTENTIAL:
+                    continue
+            
+            # DCF 建議必須是「推薦」或「強烈推薦」
+            if '推薦' not in dcf_rec and '強烈推薦' not in dcf_rec:
+                continue
+            
+            # 2. 部位條件檢查
+            current_value = stock.get('current_value', 0)
+            position_weight = (current_value / total_portfolio_value * 100) if total_portfolio_value > 0 else 0
+            
+            # 判斷是否為保護名單
+            is_protected = stock_code in (self.FINANCIAL_STOCKS + self.CORE_STOCKS)
+            max_position = MAX_POSITION_PROTECTED if is_protected else MAX_POSITION_NORMAL
+            
+            # 部位已達上限，不建議加碼
+            if position_weight >= max_position:
+                continue
+            
+            # 3. 排除條件檢查
+            return_rate = stock.get('return_rate', 0)
+            
+            # 排除：已在賣出清單
+            if stock in analysis_results.get('sell_list', []):
+                continue
+            
+            # 排除：虧損過大（避免攤平風險）
+            if return_rate < MAX_LOSS_THRESHOLD:
+                continue
+            
+            # 4. 負債比檢查（未來實作）
+            # TODO: 加入負債比限制（例如 < 50%）
+            # 需要 DataManager 支援 get_debt_ratio() 方法
+            # debt_ratio = self.data_manager.get_debt_ratio(stock_code)
+            # if debt_ratio > 50:
+            #     continue
+            
+            # 5. 計算建議加碼資訊
+            intrinsic_value = stock.get('intrinsic_value', 0)
+            current_price = stock.get('current_price', 0)
+            
+            # 建議加碼價位：從配置檔讀取比例
+            ideal_buy_price = intrinsic_value * IDEAL_PRICE_RATIO
+            
+            # 可加碼空間
+            available_space = max_position - position_weight
+            
+            # 6. 判斷優先級（使用配置檔參數）
+            if valuation_gap < BUY_A_UNDERVALUED and '強烈推薦' in dcf_rec and position_weight < BUY_A_POSITION:
+                priority = 'A'
+                priority_text = '強烈推薦加碼'
+            elif valuation_gap < BUY_B_UNDERVALUED and '推薦' in dcf_rec and position_weight < BUY_B_POSITION:
+                priority = 'B'
+                priority_text = '建議加碼'
+            else:
+                priority = 'C'
+                priority_text = '可考慮加碼'
+            
+            # 7. 建立加碼建議資訊
+            buy_opportunity = {
+                'stock_code': stock_code,
+                'stock_name': stock_name,
+                'current_price': current_price,
+                'ideal_buy_price': ideal_buy_price,
+                'intrinsic_value': intrinsic_value,
+                'valuation_gap': valuation_gap,
+                'upside_potential': upside_potential,
+                'cost_price': stock.get('cost_price', 0),
+                'current_position_weight': position_weight,
+                'available_space': available_space,
+                'max_position': max_position,
+                'is_protected': is_protected,
+                'priority': priority,
+                'recommendation': priority_text,
+                'reason': self._generate_buy_reason(
+                    valuation_gap, 
+                    upside_potential, 
+                    position_weight,
+                    is_protected
+                )
+            }
+            
+            buy_opportunities.append(buy_opportunity)
+            print(f"  ✓ 發現加碼機會: {stock_code} {stock_name} ({priority_text})")
+        
+        # 排序：優先級 A > B > C，同優先級按低估幅度排序
+        buy_opportunities.sort(key=lambda x: (x['priority'], x['valuation_gap']))
+        
+        print(f"\n[結果] 共發現 {len(buy_opportunities)} 個加碼機會")
+        if buy_opportunities:
+            priority_counts = {'A': 0, 'B': 0, 'C': 0}
+            for opp in buy_opportunities:
+                priority_counts[opp['priority']] += 1
+            print(f"  優先級 A: {priority_counts['A']} 個")
+            print(f"  優先級 B: {priority_counts['B']} 個")
+            print(f"  優先級 C: {priority_counts['C']} 個")
+        
+        return buy_opportunities
+    
+    def _generate_buy_reason(
+        self,
+        valuation_gap: float,
+        upside_potential: float,
+        position_weight: float,
+        is_protected: bool
+    ) -> str:
+        """
+        生成買入理由說明
+        
+        Args:
+            valuation_gap: 估值偏離程度
+            upside_potential: 潛在報酬率
+            position_weight: 目前部位比例
+            is_protected: 是否為保護名單
+            
+        Returns:
+            理由說明文字
+        """
+        reasons = []
+        
+        # 估值理由
+        if valuation_gap < -30:
+            reasons.append(f"嚴重低估 {abs(valuation_gap):.1f}%")
+        elif valuation_gap < -20:
+            reasons.append(f"明顯低估 {abs(valuation_gap):.1f}%")
+        else:
+            reasons.append(f"低估 {abs(valuation_gap):.1f}%")
+        
+        # 潛在報酬理由
+        if upside_potential > 50:
+            reasons.append(f"高潛在報酬 {upside_potential:.1f}%")
+        elif upside_potential > 30:
+            reasons.append(f"良好潛在報酬 {upside_potential:.1f}%")
+        
+        # 部位理由
+        if position_weight < 5:
+            reasons.append("部位較小，可積極加碼")
+        elif position_weight < 10:
+            reasons.append("部位適中，可考慮加碼")
+        
+        # 保護名單標註
+        if is_protected:
+            reasons.append("保護名單（長期投資）")
+        
+        return "、".join(reasons)
     
     def analyze_portfolio(self, holdings_df: pd.DataFrame) -> Optional[Dict]:
         """
@@ -267,6 +496,7 @@ class StockAnalyzer:
             'hold_list': [],      # 持有建議清單
             'protected_list': [], # 保護名單
             'skipped_list': [],   # 未分析清單
+            'buy_opportunities': [],  # 加碼機會清單（新增）
             'statistics': {}
         }
         

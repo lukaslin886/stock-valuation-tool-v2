@@ -92,7 +92,7 @@ class FinMindSource(DataSource):
             end_date = datetime.now().strftime('%Y-%m-%d')
             start_date = (datetime.now() - timedelta(days=years*365)).strftime('%Y-%m-%d')
             
-            # 獲取財報數據
+            # 獲取財報數據（長格式）
             financial_df = self.data_loader.taiwan_stock_financial_statement(
                 stock_id=stock_code,
                 start_date=start_date,
@@ -102,29 +102,56 @@ class FinMindSource(DataSource):
             if financial_df is None or len(financial_df) == 0:
                 return None
             
-            # 標準化欄位名稱
-            df = pd.DataFrame()
-            df['date'] = pd.to_datetime(financial_df.get('date', financial_df.index))
+            # FinMind 返回的是長格式：type 欄位包含指標名稱，value 欄位包含數值
+            # 需要轉換為寬格式
             
-            # EPS 欄位
-            if 'EPS' in financial_df.columns:
-                df['eps'] = pd.to_numeric(financial_df['EPS'], errors='coerce')
-            elif 'BasicEarningsPerShare' in financial_df.columns:
-                df['eps'] = pd.to_numeric(financial_df['BasicEarningsPerShare'], errors='coerce')
-            else:
-                df['eps'] = 0
+            # 篩選出需要的指標
+            eps_types = ['EPS', 'BasicEarningsPerShare', '基本每股盈餘']
+            revenue_types = ['Revenue', 'OperatingRevenue', '營業收入']
+            profit_types = ['ProfitLoss', 'NetIncome', '本期淨利', '稅後淨利']
             
-            # 其他欄位
-            df['revenue'] = pd.to_numeric(financial_df.get('Revenue', 0), errors='coerce')
-            df['profit'] = pd.to_numeric(financial_df.get('ProfitLoss', 0), errors='coerce')
-            df['roe'] = pd.to_numeric(financial_df.get('ROE', 0), errors='coerce')
-            df['debt_ratio'] = pd.to_numeric(financial_df.get('DebtRatio', 0), errors='coerce')
+            # 建立結果 DataFrame
+            result_df = pd.DataFrame()
             
-            # 移除 NaN 行
-            df = df.dropna(subset=['date'])
+            # 按日期分組處理
+            for date in financial_df['date'].unique():
+                date_data = financial_df[financial_df['date'] == date]
+                
+                row_data = {'date': pd.to_datetime(date)}
+                
+                # 提取 EPS
+                eps_data = date_data[date_data['type'].isin(eps_types)]
+                if len(eps_data) > 0:
+                    row_data['eps'] = pd.to_numeric(eps_data.iloc[0]['value'], errors='coerce')
+                else:
+                    row_data['eps'] = 0
+                
+                # 提取營收
+                revenue_data = date_data[date_data['type'].isin(revenue_types)]
+                if len(revenue_data) > 0:
+                    row_data['revenue'] = pd.to_numeric(revenue_data.iloc[0]['value'], errors='coerce')
+                else:
+                    row_data['revenue'] = 0
+                
+                # 提取淨利
+                profit_data = date_data[date_data['type'].isin(profit_types)]
+                if len(profit_data) > 0:
+                    row_data['profit'] = pd.to_numeric(profit_data.iloc[0]['value'], errors='coerce')
+                else:
+                    row_data['profit'] = 0
+                
+                # 預設值
+                row_data['roe'] = 0
+                row_data['debt_ratio'] = 0
+                
+                result_df = pd.concat([result_df, pd.DataFrame([row_data])], ignore_index=True)
             
-            if len(df) > 0:
-                return df
+            # 移除 NaN 和無效數據
+            result_df = result_df.dropna(subset=['date'])
+            result_df = result_df.sort_values('date')
+            
+            if len(result_df) > 0:
+                return result_df
             
             return None
             

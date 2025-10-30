@@ -13,6 +13,7 @@ import time
 from .sources.base import DataSource
 from .sources.yfinance_source import YFinanceSource
 from .sources.finmind_source import FinMindSource
+from .sources.mops_source import MOPSSource
 from .cache.base import CacheBackend
 from .cache.sqlite_cache import SQLiteCache
 from .validator import DataValidator
@@ -103,17 +104,23 @@ class DataManagerV2:
         # 初始化資料來源（按優先順序）
         self.sources: List[DataSource] = []
         
-        # 1. YFinance (主要來源)
+        # 1. YFinance (主要來源 - 股價、財報)
         yfinance_source = YFinanceSource()
         if yfinance_source.is_available:
             self.sources.append(yfinance_source)
             print("✓ YFinance 資料源已就緒")
         
-        # 2. FinMind (備援來源)
+        # 2. FinMind (備援來源 - 股價、財報)
         finmind_source = FinMindSource(api_token=finmind_token)
         if finmind_source.is_available:
             self.sources.append(finmind_source)
             print("✓ FinMind 資料源已就緒")
+        
+        # 3. MOPS (輔助來源 - 流通股數、公司資訊)
+        mops_source = MOPSSource()
+        if mops_source.is_available:
+            self.sources.append(mops_source)
+            print("✓ MOPS 資料源已就緒（簡化版 - 流通股數、公司資訊）")
         
         if not self.sources:
             print("⚠️  警告：沒有可用的資料來源！")
@@ -308,6 +315,8 @@ class DataManagerV2:
         """
         獲取股票基本資訊（智能備援）
         
+        優先序：YFinance → FinMind → MOPS (輔助)
+        
         Args:
             stock_code: 股票代碼
             
@@ -337,6 +346,62 @@ class DataManagerV2:
             self._save_to_memory_cache(cache_key, info)
             return info
         
+        return None
+    
+    def get_shares_outstanding(
+        self, 
+        stock_code: str, 
+        report_date: Optional[str] = None
+    ) -> Optional[int]:
+        """
+        獲取流通在外股數
+        
+        優先序：MOPS (第一優先) → FinMind → 預設值
+        
+        Args:
+            stock_code: 股票代碼
+            report_date: 財報期末日期（YYYY-MM-DD），預設為當前日期
+            
+        Returns:
+            流通在外股數（整數）或 None
+        """
+        if report_date is None:
+            report_date = datetime.now().strftime('%Y-%m-%d')
+        
+        cache_key = f"shares_{stock_code}_{report_date}"
+        
+        # 1. 檢查記憶體快取
+        if self.enable_memory_cache:
+            cached_shares = self._get_from_memory_cache(cache_key)
+            if cached_shares is not None:
+                print(f"✓ 從記憶體快取獲取流通股數: {stock_code}")
+                return cached_shares
+        
+        # 2. 優先使用 MOPS（最準確的流通股數來源）
+        for source in self.sources:
+            if isinstance(source, MOPSSource):
+                try:
+                    print(f"  → 優先使用 MOPS 獲取流通股數...")
+                    shares = source.get_shares_outstanding(stock_code, report_date)
+                    if shares is not None and shares > 0:
+                        self._save_to_memory_cache(cache_key, shares)
+                        return shares
+                except Exception as e:
+                    print(f"  ⚠️ MOPS 獲取流通股數失敗: {str(e)}")
+        
+        # 3. 備援：嘗試從其他資料來源獲取
+        print(f"  → 使用備援來源獲取流通股數...")
+        shares = self._get_with_fallback(
+            'get_shares_outstanding', 
+            stock_code=stock_code,
+            report_date=report_date
+        )
+        
+        if shares is not None and shares > 0:
+            self._save_to_memory_cache(cache_key, shares)
+            return shares
+        
+        print(f"  ✗ 無法獲取流通股數: {stock_code}")
         return None
     
     def get_latest_price(self, stock_code: str) -> float:
@@ -481,7 +546,16 @@ class DataManagerV2:
             years: 歷史年數
             
         Returns:
-            成長率資訊字典
+            成長率資訊字典，包含：
+            - growth_rate_1_5: 1-5年成長率
+            - growth_rate_6_10: 6-10年成長率
+            - data_quality: 資料品質
+            - message: 說明訊息
+            - eps_start: 起始 EPS（如有）
+            - eps_latest: 最新 EPS（如有）
+            - eps_start_year: 起始年份（如有）
+            - eps_latest_year: 最新年份（如有）
+            - years_count: 實際計算年數（如有）
         """
         financial_data = self.get_financial_data(stock_code, years=years)
         
@@ -507,6 +581,28 @@ class DataManagerV2:
         
         # 計算近期（1-5年）成長率
         recent_data = eps_data.tail(min(5, len(eps_data)))
+        
+        # 提取起始和最新 EPS 資訊
+        eps_start = float(recent_data.iloc[0])
+        eps_latest = float(recent_data.iloc[-1])
+        
+        # 嘗試獲取年份資訊
+        try:
+            # 從 financial_data 的 date 欄位取得年份
+            financial_data_with_date = financial_data[financial_data['eps'].isin(recent_data)]
+            if 'date' in financial_data_with_date.columns and len(financial_data_with_date) >= 2:
+                dates = pd.to_datetime(financial_data_with_date['date'])
+                eps_start_year = dates.iloc[0].year
+                eps_latest_year = dates.iloc[-1].year
+            else:
+                eps_start_year = None
+                eps_latest_year = None
+        except:
+            eps_start_year = None
+            eps_latest_year = None
+        
+        years_count = len(recent_data)
+        
         if len(recent_data) >= 2:
             recent_growth = (recent_data.iloc[-1] / recent_data.iloc[0]) ** (1 / (len(recent_data) - 1)) - 1
             recent_growth = max(-0.5, min(0.5, recent_growth))  # 限制在 ±50%
@@ -522,12 +618,23 @@ class DataManagerV2:
         else:
             long_term_growth = recent_growth * 0.6
         
-        return {
+        result = {
             'growth_rate_1_5': recent_growth,
             'growth_rate_6_10': long_term_growth,
             'data_quality': 'good' if len(eps_data) >= 5 else 'fair',
-            'message': f'基於 {len(eps_data)} 年歷史數據計算'
+            'message': f'基於 {len(eps_data)} 年歷史數據計算',
+            'eps_start': eps_start,
+            'eps_latest': eps_latest,
+            'years_count': years_count
         }
+        
+        # 只在有年份資訊時才加入
+        if eps_start_year is not None:
+            result['eps_start_year'] = eps_start_year
+        if eps_latest_year is not None:
+            result['eps_latest_year'] = eps_latest_year
+        
+        return result
     
     def get_price_data(
         self,

@@ -162,7 +162,7 @@ def main():
     """主程式入口"""
     
     print("\n" + "="*50)
-    print("           持股分析工具 v1.0")
+    print("           持股分析工具 v1.1")
     print("="*50)
     
     # 步驟1：偵測 CSV 檔案
@@ -209,7 +209,24 @@ def main():
             print(f"\n[錯誤] 分析過程失敗")
             return 1
         
-        print(f"\n✓ 分析完成")
+        print(f"\n✓ 基礎分析完成")
+        
+        # 新增：分析加碼機會
+        # 計算總投資組合價值
+        total_portfolio_value = holdings_df['現值'].sum() if '現值' in holdings_df.columns else 0
+        
+        if total_portfolio_value > 0:
+            buy_opportunities = analyzer.analyze_buy_opportunities_from_holdings(
+                analysis_results,
+                holdings_df,
+                total_portfolio_value
+            )
+            analysis_results['buy_opportunities'] = buy_opportunities
+        else:
+            print("[警告] 無法計算投資組合總值，跳過加碼分析")
+            analysis_results['buy_opportunities'] = []
+        
+        print(f"\n✓ 完整分析完成")
         
     except Exception as e:
         print(f"\n[錯誤] 分析過程發生錯誤: {str(e)}")
