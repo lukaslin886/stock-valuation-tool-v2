@@ -92,9 +92,18 @@ def main():
             stock_info = st.session_state.data_manager.normalize_stock_input(stock_input)
             
             if stock_info['is_valid']:
-                st.success(f"✓ {stock_info['display_name']}")
                 stock_code = stock_info['stock_code']
-                stock_name = stock_info['stock_name']
+                
+                # 獲取完整的股票資訊以取得股票名稱
+                try:
+                    full_info = st.session_state.data_manager.get_stock_info(stock_code)
+                    stock_name = full_info.get('stock_name', '') if full_info else ''
+                except:
+                    stock_name = ''
+                
+                # 顯示完整名稱
+                display_name = f"{stock_code} {stock_name}" if stock_name else stock_code
+                st.success(f"✓ {display_name}")
             else:
                 st.error("⚠️ 無效的股票代碼或名稱")
                 st.info("請輸入有效的台股代碼（如：2330）或完整股票名稱（如：台積電）")
@@ -241,156 +250,236 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
     with col2:
         st.subheader("股票資訊")
         
-        # 獲取股票資訊
-        with st.spinner("正在獲取數據..."):
-            try:
-                current_price = st.session_state.data_manager.get_latest_price(stock_code)
-                current_eps = st.session_state.data_manager.get_latest_eps(stock_code)
-                
-                if current_price > 0:
-                    st.metric("目前股價", f"${current_price:.2f}")
-                else:
-                    st.warning("⚠️ 無法獲取股價，請檢查股票代碼")
-                    return
-                
-                if current_eps > 0:
-                    st.metric("最新 EPS", f"${current_eps:.2f}")
-                    st.metric("本益比", f"{current_price/current_eps:.2f}")
-                else:
-                    st.warning("⚠️ 無法獲取 EPS 數據")
-                    return
-                
-                # 計算建議成長率
-                growth_rates = st.session_state.data_manager.calculate_historical_growth_rate(stock_code)
-                
-                # 計算原始值
-                gr1_raw = growth_rates['growth_rate_1_5'] * 100
-                gr2_raw = growth_rates['growth_rate_6_10'] * 100
-                
-                # 儲存到 session state 供參數設定使用（限制在合理範圍內）
-                st.session_state['suggested_gr1'] = max(-50.0, min(50.0, gr1_raw))
-                st.session_state['suggested_gr2'] = max(-50.0, min(50.0, gr2_raw))
-                st.session_state['growth_data_quality'] = growth_rates['data_quality']
-                
-                # 修改訊息，如果是負成長則特別標註
-                base_message = growth_rates['message']
-                if gr1_raw < 0 or gr2_raw < 0:
-                    base_message = f"注意：此股票呈現負成長（衰退）趨勢。{base_message}"
-                st.session_state['growth_message'] = base_message
-                    
-            except Exception as e:
-                st.error(f"數據獲取失敗: {str(e)}")
+        # 獲取股票資訊 - 添加詳細進度訊息
+        progress_text = st.empty()
+        progress_bar = st.progress(0)
+        
+        try:
+            # 步驟 1: 獲取股價
+            progress_text.info("📊 正在獲取最新股價...")
+            progress_bar.progress(25)
+            current_price = st.session_state.data_manager.get_latest_price(stock_code)
+            
+            # 步驟 2: 獲取 EPS
+            progress_text.info("💰 正在獲取 EPS 數據...")
+            progress_bar.progress(50)
+            current_eps = st.session_state.data_manager.get_latest_eps(stock_code)
+            
+            # 步驟 3: 計算成長率
+            progress_text.info("📈 正在分析歷史成長率...")
+            progress_bar.progress(75)
+            
+            # 清除進度指示器
+            progress_bar.progress(100)
+            progress_text.success("✅ 數據載入完成！")
+            progress_bar.empty()
+            progress_text.empty()
+            
+            if current_price > 0:
+                st.metric("目前股價", f"${current_price:.2f}")
+            else:
+                st.warning("⚠️ 無法獲取股價，請檢查股票代碼")
                 return
+            
+            if current_eps > 0:
+                st.metric("最新 EPS", f"${current_eps:.2f}")
+                st.metric("本益比", f"{current_price/current_eps:.2f}")
+            else:
+                st.warning("⚠️ 無法獲取 EPS 數據")
+                return
+            
+            # 計算建議成長率
+            growth_rates = st.session_state.data_manager.calculate_historical_growth_rate(stock_code)
+            
+            # 計算原始值
+            gr1_raw = growth_rates['growth_rate_1_5'] * 100
+            gr2_raw = growth_rates['growth_rate_6_10'] * 100
+            
+            # 儲存到 session state 供參數設定使用（限制在合理範圍內）
+            st.session_state['suggested_gr1'] = max(-50.0, min(50.0, gr1_raw))
+            st.session_state['suggested_gr2'] = max(-50.0, min(50.0, gr2_raw))
+            st.session_state['growth_data_quality'] = growth_rates['data_quality']
+            
+            # 修改訊息，如果是負成長則特別標註
+            base_message = growth_rates['message']
+            if gr1_raw < 0 or gr2_raw < 0:
+                base_message = f"注意：此股票呈現負成長（衰退）趨勢。{base_message}"
+            st.session_state['growth_message'] = base_message
+            
+            # 顯示 CAGR 計算基礎（如果有詳細資料）
+            if 'eps_start' in growth_rates and growth_rates['eps_start']:
+                with st.expander("📊 成長率計算基礎", expanded=False):
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        year_label = f"起始 EPS"
+                        if 'eps_start_year' in growth_rates:
+                            year_label = f"起始 EPS ({growth_rates['eps_start_year']})"
+                        st.metric(
+                            year_label,
+                            f"${growth_rates['eps_start']:.2f}"
+                        )
+                    
+                    with col2:
+                        year_label = f"最新 EPS"
+                        if 'eps_latest_year' in growth_rates:
+                            year_label = f"最新 EPS ({growth_rates['eps_latest_year']})"
+                        st.metric(
+                            year_label,
+                            f"${growth_rates['eps_latest']:.2f}"
+                        )
+                    
+                    with col3:
+                        st.metric(
+                            "計算年數",
+                            f"{growth_rates['years_count']} 年"
+                        )
+                    
+                    # CAGR 公式說明
+                    cagr_pct = growth_rates['growth_rate_1_5'] * 100
+                    st.caption(
+                        f"📐 **CAGR 公式**: "
+                        f"({growth_rates['eps_latest']:.2f} / {growth_rates['eps_start']:.2f}) "
+                        f"^ (1/{growth_rates['years_count']}) - 1 = **{cagr_pct:.2f}%**"
+                    )
+                
+        except Exception as e:
+            progress_bar.empty()
+            progress_text.empty()
+            st.error(f"❌ 數據獲取失敗: {str(e)}")
+            st.info("💡 **建議**：請確認股票代碼是否正確，或稍後再試")
+            return
     
     # 計算按鈕
     if st.button("🚀 開始計算", type="primary", use_container_width=True):
-        with st.spinner("計算中..."):
-            try:
-                # 執行 DCF 計算
-                result = st.session_state.dcf_calculator.calculate_dcf_value(
+        # 創建進度指示器
+        calc_progress_text = st.empty()
+        calc_progress_bar = st.progress(0)
+        
+        try:
+            # 步驟 1: 開始計算
+            calc_progress_text.info("🧮 正在計算 DCF 內在價值...")
+            calc_progress_bar.progress(30)
+            
+            # 執行 DCF 計算
+            result = st.session_state.dcf_calculator.calculate_dcf_value(
                     current_price=current_price,
                     current_eps=current_eps,
                     growth_rates=[growth_rate_1, growth_rate_2],
                     discount_rate=discount_rate
                 )
-                
-                # 顯示結果
-                st.markdown("---")
-                st.subheader("📊 計算結果")
-                
-                # 關鍵指標
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    st.metric(
-                        "內在價值",
-                        f"${result['intrinsic_value']:.2f}",
-                        delta=f"{result['upside_potential']:.1%}",
-                        delta_color="normal"
-                    )
-                
-                with col2:
-                    st.metric("目前股價", f"${result['current_price']:.2f}")
-                
-                with col3:
-                    st.metric("折現率", f"{result['discount_rate']:.1%}")
-                
-                # 投資建議
-                st.markdown("### 💡 投資建議")
-                
-                recommendation = result['recommendation']
-                if "強烈推薦" in recommendation:
-                    st.success(f"✅ {recommendation}")
-                elif "推薦" in recommendation:
-                    st.info(f"ℹ️ {recommendation}")
-                elif "考慮" in recommendation:
-                    st.warning(f"⚠️ {recommendation}")
-                else:
-                    st.error(f"❌ {recommendation}")
-                
-                # 現金流量表
-                st.markdown("### 📈 未來現金流預測")
-                
-                cash_flow_df = pd.DataFrame({
-                    '年度': [f"第{i+1}年" for i in range(len(result['cash_flows']))],
-                    '預測現金流': result['cash_flows'],
-                    '現值': result['present_values']
-                })
-                
-                fig = go.Figure()
-                fig.add_trace(go.Bar(
-                    x=cash_flow_df['年度'],
-                    y=cash_flow_df['預測現金流'],
-                    name='預測現金流',
-                    marker_color='lightblue'
-                ))
-                fig.add_trace(go.Bar(
-                    x=cash_flow_df['年度'],
-                    y=cash_flow_df['現值'],
-                    name='現值',
-                    marker_color='darkblue'
-                ))
-                
-                fig.update_layout(
-                    title="未來現金流與現值",
-                    xaxis_title="年度",
-                    yaxis_title="金額",
-                    barmode='group',
-                    height=400
+            
+            # 步驟 2: 計算完成
+            calc_progress_bar.progress(100)
+            calc_progress_text.success("✅ 計算完成！")
+            calc_progress_bar.empty()
+            calc_progress_text.empty()
+            
+            # 顯示結果
+            st.markdown("---")
+            st.subheader("📊 計算結果")
+            
+            # 關鍵指標
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric(
+                    "內在價值",
+                    f"${result['intrinsic_value']:.2f}",
+                    delta=f"{result['upside_potential']:.1%}",
+                    delta_color="normal"
                 )
+            
+            with col2:
+                st.metric("目前股價", f"${result['current_price']:.2f}")
+            
+            with col3:
+                st.metric("折現率", f"{result['discount_rate']:.1%}")
                 
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # 詳細數據表
-                with st.expander("📋 查看詳細數據"):
-                    st.dataframe(cash_flow_df, use_container_width=True)
-                
-                # 敏感性分析
-                st.markdown("### 🎛️ 敏感性分析")
-                
-                with st.spinner("執行敏感性分析..."):
-                    sensitivity = st.session_state.dcf_calculator.sensitivity_analysis(
-                        current_price=current_price,
-                        current_eps=current_eps,
-                        base_growth_rates=[growth_rate_1, growth_rate_2]
-                    )
-                    
-                    # 製作敏感性分析表格
-                    sensitivity_data = []
-                    for scenario, rates in sensitivity.items():
-                        for rate_name, values in rates.items():
-                            sensitivity_data.append({
-                                '情境': scenario,
-                                '折現率': rate_name,
-                                '內在價值': f"${values['內在價值']:.0f}",
-                                '潛在獲利率': f"{values['潛在獲利率']:.1%}"
-                            })
-                    
-                    sensitivity_df = pd.DataFrame(sensitivity_data)
-                    st.dataframe(sensitivity_df, use_container_width=True)
-                
-            except Exception as e:
-                st.error(f"計算失敗: {str(e)}")
+            # 投資建議
+            st.markdown("### 💡 投資建議")
+            
+            recommendation = result['recommendation']
+            if "強烈推薦" in recommendation:
+                st.success(f"✅ {recommendation}")
+            elif "推薦" in recommendation:
+                st.info(f"ℹ️ {recommendation}")
+            elif "考慮" in recommendation:
+                st.warning(f"⚠️ {recommendation}")
+            else:
+                st.error(f"❌ {recommendation}")
+            
+            # 現金流量表
+            st.markdown("### 📈 未來現金流預測")
+            
+            cash_flow_df = pd.DataFrame({
+                '年度': [f"第{i+1}年" for i in range(len(result['cash_flows']))],
+                '預測現金流': result['cash_flows'],
+                '現值': result['present_values']
+            })
+            
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=cash_flow_df['年度'],
+                y=cash_flow_df['預測現金流'],
+                name='預測現金流',
+                marker_color='lightblue'
+            ))
+            fig.add_trace(go.Bar(
+                x=cash_flow_df['年度'],
+                y=cash_flow_df['現值'],
+                name='現值',
+                marker_color='darkblue'
+            ))
+            
+            fig.update_layout(
+                title="未來現金流與現值",
+                xaxis_title="年度",
+                yaxis_title="金額",
+                barmode='group',
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # 詳細數據表
+            with st.expander("📋 查看詳細數據"):
+                st.dataframe(cash_flow_df, use_container_width=True)
+            
+            # 敏感性分析
+            st.markdown("### 🎛️ 敏感性分析")
+            
+            # 敏感性分析進度指示
+            sens_progress = st.empty()
+            sens_progress.info("📊 正在執行敏感性分析...")
+            
+            sensitivity = st.session_state.dcf_calculator.sensitivity_analysis(
+                current_price=current_price,
+                current_eps=current_eps,
+                base_growth_rates=[growth_rate_1, growth_rate_2]
+            )
+            
+            sens_progress.empty()
+            
+            # 製作敏感性分析表格
+            sensitivity_data = []
+            for scenario, rates in sensitivity.items():
+                for rate_name, values in rates.items():
+                    sensitivity_data.append({
+                        '情境': scenario,
+                        '折現率': rate_name,
+                        '內在價值': f"${values['內在價值']:.0f}",
+                        '潛在獲利率': f"{values['潛在獲利率']:.1%}"
+                    })
+            
+            sensitivity_df = pd.DataFrame(sensitivity_data)
+            st.dataframe(sensitivity_df, use_container_width=True)
+            
+        except Exception as e:
+            calc_progress_bar.empty()
+            calc_progress_text.empty()
+            st.error(f"❌ 計算失敗: {str(e)}")
+            st.info("💡 **建議**：請檢查輸入參數，或聯繫技術支援")
 
 
 def show_backtest(stock_code: str, stock_name: str):
@@ -829,6 +918,56 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
     display_title = f"{stock_code} {stock_name}" if stock_name else stock_code
     st.header(f"📋 綜合分析報告 - {display_title}")
     
+    # DCF 參數設定區
+    with st.expander("⚙️ DCF 參數設定", expanded=False):
+        st.markdown("### 成長率假設")
+        st.caption("系統會根據歷史數據提供建議值，您也可以自行調整")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # 獲取系統建議值作為預設
+            try:
+                suggested_rates = st.session_state.data_manager.calculate_historical_growth_rate(stock_code)
+                default_gr1 = max(-50.0, min(50.0, suggested_rates['growth_rate_1_5'] * 100))
+                suggestion_message = suggested_rates['message']
+            except:
+                default_gr1 = 23.0
+                suggestion_message = "使用預設成長率"
+            
+            growth_rate_1 = st.number_input(
+                "成長率 1-5年 (%)",
+                min_value=-50.0,
+                max_value=50.0,
+                value=default_gr1,
+                step=0.1,
+                key="comp_gr1",
+                help="系統根據歷史數據建議的成長率，可自行調整"
+            ) / 100
+        
+        with col2:
+            try:
+                default_gr2 = max(-50.0, min(50.0, suggested_rates['growth_rate_6_10'] * 100))
+            except:
+                default_gr2 = 12.0
+            
+            growth_rate_2 = st.number_input(
+                "成長率 6-10年 (%)",
+                min_value=-50.0,
+                max_value=30.0,
+                value=default_gr2,
+                step=0.1,
+                key="comp_gr2",
+                help="系統根據歷史數據建議的成長率，可自行調整"
+            ) / 100
+        
+        # 顯示建議訊息
+        if suggestion_message:
+            if default_gr1 < 0 or default_gr2 < 0:
+                st.warning(f"⚠️ {suggestion_message}")
+            else:
+                st.info(f"💡 {suggestion_message}")
+    
     if st.button("🚀 生成完整報告", type="primary"):
         with st.spinner("生成報告中，請稍候..."):
             try:
@@ -840,12 +979,12 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
                     st.error("無法獲取股票數據")
                     return
                 
-                # DCF 估值
+                # DCF 估值 - 使用輸入的成長率
                 st.markdown("## 💎 DCF 估值")
                 dcf_result = st.session_state.dcf_calculator.calculate_dcf_value(
                     current_price=current_price,
                     current_eps=current_eps,
-                    growth_rates=[0.23, 0.12]
+                    growth_rates=[growth_rate_1, growth_rate_2]
                 )
                 
                 col1, col2, col3 = st.columns(3)
