@@ -19,6 +19,81 @@
 - **SQLite** - 本地數據庫
 - **Plotly** - 數據視覺化
 
+## 📡 數據源與 API 限制
+
+本專案整合多個台股數據源，確保數據的可靠性與完整性：
+
+### 主要數據源
+
+1. **FinMind API** ⭐ 主要來源
+   - 台股基本資訊、每日股價、本益比等
+   - 歷史數據深度：**10年以上**
+   - 請求頻率：建議間隔 0.5-1 秒
+   - Token 設定：在 `.env` 中設定 `FINMIND_TOKEN`
+
+2. **yfinance** - 備援來源
+   - 提供 EPS、財務報表等數據
+   - 國際股市也支援
+   - 無需 API Token
+
+3. **FinLab** - 輔助來源（價格數據）
+   - 台股價格數據
+   - 免費版功能有限
+   - Token 設定：在 `.env` 中設定 `FINLAB_API_TOKEN`
+
+### API 權限檢查
+
+我們提供了完整的 API 權限檢查工具，可以幫助您了解當前 Token 的功能範圍：
+
+```bash
+# 執行權限檢查
+python test_finmind_permissions.py
+```
+
+檢查結果會生成詳細報告：[finmind_api_permissions_report.md](finmind_api_permissions_report.md)
+
+**報告內容包含**：
+- ✅ Token 有效性驗證
+- ✅ 可用資料集清單（共8種）
+- ✅ 請求頻率限制測試
+- ✅ 歷史資料深度測試（1/3/5/10年）
+- ✅ 使用建議與限制說明
+
+### 建議配置
+
+**最佳配置**（推薦）：
+- FinMind Token（付費版）
+- FinLab Token（可選）
+- 自動備援到 yfinance
+
+**最低配置**（免費）：
+- FinMind Token（免費版）
+- 使用 yfinance 作為主要 EPS 來源
+
+### 數據來源優先序
+
+系統會自動按照以下優先序獲取數據：
+
+**EPS 數據**：yfinance → FinMind → 預設值  
+**財務數據**：yfinance → FinMind → 快取  
+**價格數據**：FinLab → FinMind → yfinance
+
+### 常見問題
+
+**Q: 為什麼有些股票無法獲取數據？**  
+A: 某些小型股或新上市股票可能在部分數據源中沒有完整數據。系統會自動嘗試其他數據源。
+
+**Q: 如何提升數據獲取成功率？**  
+A: 
+1. 設定 FinMind API Token（免費申請）
+2. 確保網路連線穩定
+3. 檢查股票代碼是否正確（4位數字）
+
+**Q: API 請求次數有限制嗎？**  
+A: 免費版有較嚴格的限制，建議使用本地快取減少請求次數。付費版限制較寬鬆。
+
+更多詳細資訊請參閱 [finmind_api_permissions_report.md](finmind_api_permissions_report.md)
+
 ## 🚀 快速開始
 
 ### 環境需求
