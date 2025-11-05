@@ -268,10 +268,13 @@
   - 完成日期：2025-11-05
   - 相關檔案：`portfolio_analyzer/analyzer.py`, `test_portfolio_slippage_integration.py`
   
-- [ ] **P2-30** 建立滑動風險單元測試
-  - 測試各種市場條件下的滑價計算
-  - 測試流動性分級
-  - 相關檔案：`tests/unit/test_slippage_model.py`
+- [x] **P2-30** 建立滑動風險單元測試 ✅
+  - ✅ 將測試腳本改寫為 pytest 格式
+  - ✅ 整合三個測試檔案到 tests/unit/ 目錄
+  - ✅ 測試結果：68 個測試，62 個通過（91%）
+  - ✅ 測試覆蓋範圍：SlippageModel 67%、DCF整合、Portfolio整合
+  - 完成日期：2025-11-05
+  - 相關檔案：`tests/unit/test_slippage_model.py`, `tests/unit/test_dcf_slippage_integration.py`, `tests/unit/test_portfolio_slippage_integration.py`
   
 - [ ] **P2-31** 滑動風險配置參數與文件
   - 更新 `portfolio_analyzer/config.py`
