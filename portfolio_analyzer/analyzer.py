@@ -16,6 +16,15 @@ sys.path.insert(0, str(project_root))
 from app.data import DataManager
 from app.dcf_calculator import DCFCalculator
 
+# 導入滑動風險模型
+try:
+    from app.risk.slippage_model import SlippageModel
+except ImportError:
+    try:
+        from ..app.risk.slippage_model import SlippageModel
+    except ImportError:
+        from risk.slippage_model import SlippageModel
+
 # 導入策略配置
 from . import config
 
@@ -27,10 +36,22 @@ class StockAnalyzer:
     FINANCIAL_STOCKS = config.FINANCIAL_STOCKS
     CORE_STOCKS = config.CORE_STOCKS
     
-    def __init__(self):
-        """初始化分析器"""
+    def __init__(self, enable_slippage: bool = True):
+        """
+        初始化分析器
+        
+        Args:
+            enable_slippage: 是否啟用滑動風險模型，預設為 True
+        """
         self.data_manager = DataManager()
         self.dcf_calculator = DCFCalculator()
+        self.enable_slippage = enable_slippage
+        
+        # 初始化滑動風險模型
+        if self.enable_slippage:
+            self.slippage_model = SlippageModel()
+        else:
+            self.slippage_model = None
         
     def is_etf(self, stock_name: str) -> bool:
         """
@@ -374,8 +395,41 @@ class StockAnalyzer:
             intrinsic_value = stock.get('intrinsic_value', 0)
             current_price = stock.get('current_price', 0)
             
-            # 建議加碼價位：從配置檔讀取比例
-            ideal_buy_price = intrinsic_value * IDEAL_PRICE_RATIO
+            # 建議加碼價位：從配置檔讀取比例（安全邊際）
+            base_buy_price = intrinsic_value * IDEAL_PRICE_RATIO
+            
+            # 整合滑價調整
+            ideal_buy_price = base_buy_price  # 預設值
+            slippage_info = None
+            
+            if self.enable_slippage and self.slippage_model:
+                try:
+                    # 獲取價格數據用於滑價計算（最近 10 根日 K 棒）
+                    price_data = self.data_manager.get_stock_price(
+                        stock_code, 
+                        days=10
+                    )
+                    
+                    if price_data is not None and len(price_data) >= 2:
+                        # 計算滑價調整後的買入價
+                        slippage_result = self.slippage_model.adjust_buy_price(
+                            base_price=base_buy_price,
+                            price_data=price_data,
+                            position_size=100000  # 預設部位大小 10萬元
+                        )
+                        
+                        if slippage_result['success']:
+                            ideal_buy_price = slippage_result['adjusted_price']
+                            slippage_info = {
+                                'slippage_amount': slippage_result['slippage_amount'],
+                                'slippage_rate': slippage_result['slippage_rate'],
+                                'liquidity_tier': slippage_result['liquidity_tier'],
+                                'message': slippage_result['message']
+                            }
+                except Exception as e:
+                    # 滑價計算失敗時使用基礎價格
+                    print(f"  ⚠️ {stock_code} 滑價計算失敗: {e}")
+                    ideal_buy_price = base_buy_price
             
             # 可加碼空間
             available_space = max_position - position_weight
@@ -396,7 +450,8 @@ class StockAnalyzer:
                 'stock_code': stock_code,
                 'stock_name': stock_name,
                 'current_price': current_price,
-                'ideal_buy_price': ideal_buy_price,
+                'base_buy_price': base_buy_price,  # 基礎建議價（未含滑價）
+                'ideal_buy_price': ideal_buy_price,  # 最終建議價（含滑價）
                 'intrinsic_value': intrinsic_value,
                 'valuation_gap': valuation_gap,
                 'upside_potential': upside_potential,
@@ -407,11 +462,14 @@ class StockAnalyzer:
                 'is_protected': is_protected,
                 'priority': priority,
                 'recommendation': priority_text,
+                'slippage_enabled': self.enable_slippage and slippage_info is not None,
+                'slippage_info': slippage_info,  # 滑價詳細資訊
                 'reason': self._generate_buy_reason(
                     valuation_gap, 
                     upside_potential, 
                     position_weight,
-                    is_protected
+                    is_protected,
+                    slippage_info
                 )
             }
             
@@ -437,7 +495,8 @@ class StockAnalyzer:
         valuation_gap: float,
         upside_potential: float,
         position_weight: float,
-        is_protected: bool
+        is_protected: bool,
+        slippage_info: Optional[Dict] = None
     ) -> str:
         """
         生成買入理由說明
@@ -447,6 +506,7 @@ class StockAnalyzer:
             upside_potential: 潛在報酬率
             position_weight: 目前部位比例
             is_protected: 是否為保護名單
+            slippage_info: 滑價資訊（可選）
             
         Returns:
             理由說明文字
@@ -476,6 +536,15 @@ class StockAnalyzer:
         # 保護名單標註
         if is_protected:
             reasons.append("保護名單（長期投資）")
+        
+        # 滑價資訊（如果有）
+        if slippage_info:
+            liquidity = slippage_info.get('liquidity_tier', 'unknown')
+            slippage_rate = slippage_info.get('slippage_rate', 0)
+            if liquidity == 'very_low':
+                reasons.append(f"低流動性（滑價 {slippage_rate:.2f}%）")
+            elif slippage_rate > 0.5:
+                reasons.append(f"滑價較高 {slippage_rate:.2f}%")
         
         return "、".join(reasons)
     

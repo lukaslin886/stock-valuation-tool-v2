@@ -258,10 +258,15 @@
   - 完成日期：2025-11-05
   - 相關檔案：`app/dcf_calculator.py`, `test_dcf_slippage_integration.py`
   
-- [ ] **P2-29** 整合滑動風險到 Portfolio Analyzer 🔴
-  - 修改加碼建議價位計算
-  - 考慮滑價影響
-  - 相關檔案：`portfolio_analyzer/analyzer.py`
+- [x] **P2-29** 整合滑動風險到 Portfolio Analyzer 🔴 ✅
+  - ✅ 添加 SlippageModel 導入（支援多種路徑）
+  - ✅ 初始化選項（enable_slippage 參數）
+  - ✅ 整合到 `analyze_buy_opportunities_from_holdings()` 方法
+  - ✅ 修改加碼建議價位計算（base_buy_price + slippage）
+  - ✅ 更新買入理由生成（包含滑價資訊）
+  - ✅ 測試驗證：4 項測試全部通過（初始化、分析、加碼建議、停用模式）
+  - 完成日期：2025-11-05
+  - 相關檔案：`portfolio_analyzer/analyzer.py`, `test_portfolio_slippage_integration.py`
   
 - [ ] **P2-30** 建立滑動風險單元測試
   - 測試各種市場條件下的滑價計算
