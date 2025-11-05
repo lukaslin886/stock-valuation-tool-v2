@@ -236,13 +236,17 @@
   - 支援投資組合回測
   - 混合模型：波動性 + 流動性 + 市場衝擊
   
-- [ ] **P2-27** 實作 SlippageModel 類別 🔴
-  - 建立 `app/risk/slippage_model.py`
-  - 實作 `calculate_slippage()` 方法
-  - 實作波動性滑價計算
-  - 實作流動性滑價計算
-  - 實作市場衝擊滑價計算
-  - 相關檔案：`app/risk/slippage_model.py`
+- [x] **P2-27** 實作 SlippageModel 類別 🔴 ✅
+  - ✅ 建立 `app/risk/slippage_model.py`
+  - ✅ 實作 `calculate_slippage()` 方法
+  - ✅ 實作波動性滑價計算
+  - ✅ 實作流動性滑價計算
+  - ✅ 實作市場衝擊滑價計算
+  - ✅ 實作 `adjust_buy_price()` 方法（DCF 應用）
+  - ✅ 實作 `adjust_backtesting_trades()` 方法（Portfolio 應用）
+  - ✅ 測試驗證：5 項測試全部通過
+  - 完成日期：2025-11-05
+  - 相關檔案：`app/risk/slippage_model.py`, `test_slippage_model.py`
   
 - [ ] **P2-28** 整合滑動風險到 DCF Calculator 🔴
   - 修改 `calculate_buy_recommendation()`
