@@ -4,20 +4,39 @@ DCF 股票估值計算器
 """
 
 import numpy as np
+import pandas as pd
 from typing import Dict, List, Optional
+
+# 支援相對導入和絕對導入
+try:
+    from .risk.slippage_model import SlippageModel
+except ImportError:
+    from risk.slippage_model import SlippageModel
 
 
 class DCFCalculator:
     """DCF 股票估值計算器"""
 
-    def __init__(self):
-        """初始化計算器"""
+    def __init__(self, enable_slippage: bool = True):
+        """
+        初始化計算器
+        
+        Args:
+            enable_slippage: 是否啟用滑動風險計算
+        """
         self.default_params = {
             'risk_free_rate': 0.04,    # 無風險利率 4%
             'risk_premium': 0.04,      # 風險補償 4%
             'inflation_rate': 0.03,    # 通貨膨脹率 3%
             'perpetual_growth': 0.02,  # 永續成長率 2%
         }
+        
+        # 滑動風險模型
+        self.enable_slippage = enable_slippage
+        if enable_slippage:
+            self.slippage_model = SlippageModel()
+        else:
+            self.slippage_model = None
 
     def calculate_dcf_value(
         self,
@@ -164,6 +183,85 @@ class DCFCalculator:
         else:
             return "不推薦 - 可能被高估"
 
+    def calculate_buy_recommendation(
+        self,
+        intrinsic_value: float,
+        current_price: float,
+        price_data: Optional[pd.DataFrame] = None,
+        position_size: Optional[float] = None,
+        safety_margin: float = 0.85
+    ) -> Dict:
+        """
+        計算買入建議價格（考慮滑動風險與安全邊際）
+        
+        Args:
+            intrinsic_value: DCF 計算的內在價值
+            current_price: 目前股價
+            price_data: 價格數據（用於滑價計算）
+            position_size: 預計投資金額
+            safety_margin: 安全邊際比例（預設 0.85，即 85% 內在價值）
+            
+        Returns:
+            買入建議資訊字典
+        """
+        # 計算基礎建議買入價（考慮安全邊際）
+        base_buy_price = intrinsic_value * safety_margin
+        
+        # 初始化結果
+        result = {
+            'intrinsic_value': intrinsic_value,
+            'current_price': current_price,
+            'safety_margin': safety_margin,
+            'base_buy_price': base_buy_price,
+            'recommended_buy_price': base_buy_price,
+            'slippage_adjusted': False,
+            'slippage_info': None,
+            'is_undervalued': current_price < base_buy_price,
+            'discount_pct': (intrinsic_value - current_price) / intrinsic_value if intrinsic_value > 0 else 0
+        }
+        
+        # 如果啟用滑動風險且有價格數據，進行滑價調整
+        if self.enable_slippage and self.slippage_model and price_data is not None:
+            try:
+                slippage_result = self.slippage_model.adjust_buy_price(
+                    price_data=price_data,
+                    target_price=base_buy_price,
+                    position_size=position_size
+                )
+                
+                if slippage_result['is_valid']:
+                    result['recommended_buy_price'] = slippage_result['adjusted_price']
+                    result['slippage_adjusted'] = True
+                    result['slippage_info'] = {
+                        'slippage_amount': slippage_result['slippage_amount'],
+                        'slippage_pct': slippage_result['slippage_pct'],
+                        'liquidity_tier': slippage_result['liquidity_tier'],
+                        'message': slippage_result['message']
+                    }
+            except Exception as e:
+                # 滑價計算失敗，使用基礎價格
+                result['slippage_info'] = {
+                    'error': str(e),
+                    'message': '滑價計算失敗，使用基礎建議價格'
+                }
+        
+        # 生成建議訊息
+        if result['is_undervalued']:
+            discount_pct = result['discount_pct'] * 100
+            if discount_pct > 30:
+                priority = '🔴 優先級 A'
+            elif discount_pct > 15:
+                priority = '🟡 優先級 B'
+            else:
+                priority = '🟢 優先級 C'
+            
+            result['recommendation'] = f'{priority} - 低估 {discount_pct:.1f}%，建議於 ${result["recommended_buy_price"]:.2f} 以下買入'
+        else:
+            overprice_pct = (current_price - base_buy_price) / base_buy_price * 100
+            result['recommendation'] = f'⚠️ 不建議 - 目前價格高於建議買入價 {overprice_pct:.1f}%'
+        
+        return result
+    
     def sensitivity_analysis(
         self,
         current_price: float,

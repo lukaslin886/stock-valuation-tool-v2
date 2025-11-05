@@ -248,10 +248,15 @@
   - 完成日期：2025-11-05
   - 相關檔案：`app/risk/slippage_model.py`, `test_slippage_model.py`
   
-- [ ] **P2-28** 整合滑動風險到 DCF Calculator 🔴
-  - 修改 `calculate_buy_recommendation()`
-  - 加入滑價調整的買入價格
-  - 相關檔案：`app/dcf_calculator.py`
+- [x] **P2-28** 整合滑動風險到 DCF Calculator 🔴 ✅
+  - ✅ 添加 SlippageModel 導入
+  - ✅ 初始化 SlippageModel（enable_slippage 參數）
+  - ✅ 實作 `calculate_buy_recommendation()` 方法
+  - ✅ 滑價調整的買入價格計算
+  - ✅ 安全邊際與優先級分類
+  - ✅ 測試驗證：4 項測試全部通過
+  - 完成日期：2025-11-05
+  - 相關檔案：`app/dcf_calculator.py`, `test_dcf_slippage_integration.py`
   
 - [ ] **P2-29** 整合滑動風險到 Portfolio Analyzer 🔴
   - 修改加碼建議價位計算
