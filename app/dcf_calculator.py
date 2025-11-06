@@ -5,6 +5,7 @@ DCF 股票估值計算器
 
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from typing import Dict, List, Optional
 
 # 支援相對導入和絕對導入
@@ -44,7 +45,11 @@ class DCFCalculator:
         current_eps: float,
         growth_rates: List[float],
         discount_rate: Optional[float] = None,
-        years: int = 10
+        years: int = 10,
+        stock_code: Optional[str] = None,
+        stock_name: Optional[str] = None,
+        data_source: Optional[str] = None,
+        weighting_method: Optional[str] = None
     ) -> Dict:
         """
         計算 DCF 股票價值
@@ -55,6 +60,10 @@ class DCFCalculator:
             growth_rates: 成長率列表 [1-5年, 6-10年]
             discount_rate: 折現率 (如果為 None 則使用 CAPM 計算)
             years: 預測年數
+            stock_code: 股票代碼（可選）
+            stock_name: 股票名稱（可選）
+            data_source: 資料來源（可選）
+            weighting_method: 成長率計算方法（可選）
 
         Returns:
             包含計算結果的字典
@@ -88,7 +97,22 @@ class DCFCalculator:
             'cash_flows': cash_flows,
             'present_values': present_values,
             'terminal_value': terminal_value,
-            'recommendation': self._get_investment_recommendation(upside_potential)
+            'recommendation': self._get_investment_recommendation(upside_potential),
+            'input_parameters': {
+                'timestamp': datetime.now().isoformat(),
+                'stock_code': stock_code,
+                'stock_name': stock_name,
+                'current_price': current_price,
+                'current_eps': current_eps,
+                'growth_rates': {
+                    '1-5年': growth_rates[0] if len(growth_rates) > 0 else None,
+                    '6-10年': growth_rates[1] if len(growth_rates) > 1 else None
+                },
+                'discount_rate': discount_rate,
+                'years': years,
+                'data_source': data_source or '未指定',
+                'weighting_method': weighting_method or 'unknown'
+            }
         }
 
         return result
@@ -124,10 +148,7 @@ class DCFCalculator:
 
         # 6-10年使用第二個成長率
         for year in range(6, years + 1):
-            if year <= 5:
-                current_year_eps *= (1 + growth_rates[0])
-            else:
-                current_year_eps *= (1 + growth_rates[1])
+            current_year_eps *= (1 + growth_rates[1])
             cash_flows.append(current_year_eps)
 
         return cash_flows
@@ -261,6 +282,78 @@ class DCFCalculator:
             result['recommendation'] = f'⚠️ 不建議 - 目前價格高於建議買入價 {overprice_pct:.1f}%'
         
         return result
+    
+    def calculate_scenario_comparison(
+        self,
+        current_price: float,
+        current_eps: float,
+        base_growth_rates: List[float],
+        discount_rate: Optional[float] = None,
+        stock_code: Optional[str] = None,
+        stock_name: Optional[str] = None,
+        data_source: Optional[str] = None,
+        weighting_method: Optional[str] = None
+    ) -> Dict:
+        """
+        計算三種情境（保守、中性、樂觀）的 DCF 估值比較
+        
+        Args:
+            current_price: 目前股價
+            current_eps: 當前每股盈餘
+            base_growth_rates: 基準成長率列表 [1-5年, 6-10年]
+            discount_rate: 折現率
+            stock_code: 股票代碼（可選）
+            stock_name: 股票名稱（可選）
+            data_source: 資料來源（可選）
+            weighting_method: 成長率計算方法（可選）
+        
+        Returns:
+            包含三種情境結果的字典
+        """
+        if discount_rate is None:
+            discount_rate = self._calculate_capm_rate()
+        
+        scenarios = {
+            '保守': {
+                'growth_rates': [
+                    max(-0.5, base_growth_rates[0] * 0.7),  # 降低30%，最低-50%
+                    max(-0.5, base_growth_rates[1] * 0.7)
+                ],
+                'color': '#ef5350',
+                'description': '成長率降低 30%'
+            },
+            '中性': {
+                'growth_rates': base_growth_rates,
+                'color': '#42a5f5',
+                'description': '使用當前設定的成長率'
+            },
+            '樂觀': {
+                'growth_rates': [
+                    min(0.5, base_growth_rates[0] * 1.3),  # 增加30%，最高50%
+                    min(0.5, base_growth_rates[1] * 1.3)
+                ],
+                'color': '#66bb6a',
+                'description': '成長率增加 30%'
+            }
+        }
+        
+        results = {}
+        for scenario_name, scenario_data in scenarios.items():
+            result = self.calculate_dcf_value(
+                current_price=current_price,
+                current_eps=current_eps,
+                growth_rates=scenario_data['growth_rates'],
+                discount_rate=discount_rate,
+                stock_code=stock_code,
+                stock_name=stock_name,
+                data_source=data_source,
+                weighting_method=weighting_method
+            )
+            result['color'] = scenario_data['color']
+            result['description'] = scenario_data['description']
+            results[scenario_name] = result
+        
+        return results
     
     def sensitivity_analysis(
         self,

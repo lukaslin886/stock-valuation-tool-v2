@@ -51,13 +51,12 @@ class BacktestEngine:
         print(f"成長率假設: 1-5年={growth_rates[0]:.1%}, 6-10年={growth_rates[1]:.1%}")
         print(f"重新計算週期: {rebalance_months} 個月")
 
-        # 獲取歷史價格數據（強制更新）
+        # 獲取歷史價格數據
         print("\n[1/3] 正在獲取歷史價格數據...")
         price_data = self.data_manager.get_price_data(
             stock_code, 
             start_date, 
-            end_date,
-            force_update=True
+            end_date
         )
         
         if price_data is None or len(price_data) == 0:
@@ -68,12 +67,11 @@ class BacktestEngine:
         print(f"✅ 成功獲取 {len(price_data)} 筆價格數據")
         print(f"   期間: {price_data['date'].min()} 至 {price_data['date'].max()}")
 
-        # 獲取財務數據（強制更新）
+        # 獲取財務數據
         print("\n[2/3] 正在獲取財務數據...")
         financial_data = self.data_manager.get_financial_data(
             stock_code, 
-            years=10,
-            force_update=True
+            years=10
         )
         
         if financial_data is None or len(financial_data) == 0:

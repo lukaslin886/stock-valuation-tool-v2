@@ -199,8 +199,12 @@ class StockAnalyzer:
                     'error': '無法獲取有效 EPS'
                 }
             
-            # 計算建議成長率
-            growth_rates_info = self.data_manager.calculate_historical_growth_rate(stock_code)
+            # 計算建議成長率（從配置讀取時間加權設定）
+            growth_rates_info = self.data_manager.calculate_historical_growth_rate(
+                stock_code,
+                use_time_weighting=config.ENABLE_TIME_WEIGHTING,
+                recent_weight_ratio=config.RECENT_WEIGHT_RATIO
+            )
             growth_rate_1 = max(-0.5, min(0.5, growth_rates_info['growth_rate_1_5']))
             growth_rate_2 = max(-0.5, min(0.5, growth_rates_info['growth_rate_6_10']))
             

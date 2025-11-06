@@ -536,14 +536,21 @@ class DataManagerV2:
     def calculate_historical_growth_rate(
         self,
         stock_code: str,
-        years: int = 10
+        years: int = 10,
+        use_time_weighting: bool = True,
+        recent_weight_ratio: float = 0.6
     ) -> Dict[str, Any]:
         """
-        計算歷史成長率建議
+        計算歷史成長率建議（支援指數衰減時間加權）
         
         Args:
             stock_code: 股票代碼
             years: 歷史年數
+            use_time_weighting: 是否使用時間加權（預設 True）
+            recent_weight_ratio: 近期權重比例（預設 0.6 = 60%）
+                               - 數值越高，近期數據影響越大
+                               - 範圍：0.5-0.9
+                               - 0.6 表示最近一年佔總權重的 60%
             
         Returns:
             成長率資訊字典，包含：
@@ -556,6 +563,7 @@ class DataManagerV2:
             - eps_start_year: 起始年份（如有）
             - eps_latest_year: 最新年份（如有）
             - years_count: 實際計算年數（如有）
+            - weighting_method: 使用的加權方法（'time_weighted' 或 'equal_weighted'）
         """
         financial_data = self.get_financial_data(stock_code, years=years)
         
@@ -603,11 +611,24 @@ class DataManagerV2:
         
         years_count = len(recent_data)
         
+        # 計算成長率（支援時間加權或等權重）
         if len(recent_data) >= 2:
-            recent_growth = (recent_data.iloc[-1] / recent_data.iloc[0]) ** (1 / (len(recent_data) - 1)) - 1
+            if use_time_weighting:
+                # 使用指數衰減時間加權
+                recent_growth = self._calculate_time_weighted_growth_rate(
+                    recent_data, 
+                    recent_weight_ratio
+                )
+                weighting_method = 'time_weighted'
+            else:
+                # 使用傳統等權重 CAGR
+                recent_growth = (recent_data.iloc[-1] / recent_data.iloc[0]) ** (1 / (len(recent_data) - 1)) - 1
+                weighting_method = 'equal_weighted'
+            
             recent_growth = max(-0.5, min(0.5, recent_growth))  # 限制在 ±50%
         else:
             recent_growth = 0.15
+            weighting_method = 'default'
         
         # 計算長期（6-10年）成長率
         if len(eps_data) >= 6:
@@ -625,7 +646,8 @@ class DataManagerV2:
             'message': f'基於 {len(eps_data)} 年歷史數據計算',
             'eps_start': eps_start,
             'eps_latest': eps_latest,
-            'years_count': years_count
+            'years_count': years_count,
+            'weighting_method': weighting_method
         }
         
         # 只在有年份資訊時才加入
@@ -694,6 +716,157 @@ class DataManagerV2:
         self.memory_cache.clear()
         self.cache.clear_cache()
         print("✓ 所有快取已清除")
+    
+    # ==================== 時間加權計算方法 ====================
+    
+    def _calculate_lambda(self, n: int, recent_weight_ratio: float) -> float:
+        """
+        計算指數衰減參數 lambda
+        
+        使用指數衰減權重公式：w_i = exp(-λ * (n - 1 - i))
+        其中 i 是數據點索引（0 為最舊，n-1 為最新）
+        
+        Args:
+            n: 數據點數量
+            recent_weight_ratio: 最近數據點應佔的權重比例（0.5-0.9）
+                               例如 0.6 表示最新數據點應佔總權重的 60%
+            
+        Returns:
+            lambda 衰減參數
+            
+        技術說明：
+            求解方程：1 / [Σ exp(-λ * (n-1-i))] = recent_weight_ratio
+            即找到 λ 使得最新數據點的標準化權重等於 recent_weight_ratio
+        """
+        import numpy as np
+        from scipy.optimize import brentq
+        
+        # 限制 recent_weight_ratio 在合理範圍
+        recent_weight_ratio = max(0.5, min(0.9, recent_weight_ratio))
+        
+        # 特殊情況：等權重
+        if abs(recent_weight_ratio - 1.0/n) < 0.01:
+            return 0.0001  # 接近 0 的 lambda 會產生接近等權重的結果
+        
+        def weight_sum_equation(lam):
+            """
+            計算目標方程式的值
+            目標：使得 1 / sum(weights) = recent_weight_ratio
+            即：sum(weights) = 1 / recent_weight_ratio
+            """
+            if lam <= 0:
+                return float('inf')
+            
+            # 計算權重總和：Σ exp(-λ * (n-1-i)) for i = 0 to n-1
+            # 等價於：Σ exp(-λ * j) for j = n-1 down to 0
+            # 這是等比級數：1 + r + r^2 + ... + r^(n-1)，其中 r = exp(-λ)
+            
+            r = np.exp(-lam)
+            if abs(r - 1.0) < 1e-10:
+                # r 接近 1 時使用極限公式
+                weight_sum = n
+            else:
+                # 等比級數和：(1 - r^n) / (1 - r)
+                weight_sum = (1 - r**n) / (1 - r)
+            
+            # 目標總和
+            target_sum = 1.0 / recent_weight_ratio
+            
+            return weight_sum - target_sum
+        
+        # 使用 Brent 方法求根
+        try:
+            lambda_value = brentq(weight_sum_equation, 0.001, 10.0)
+            return lambda_value
+        except ValueError:
+            # 如果求根失敗，返回保守值
+            return 0.5
+    
+    def _calculate_exponential_weights(
+        self, 
+        n: int, 
+        recent_weight_ratio: float = 0.6
+    ) -> List[float]:
+        """
+        計算指數衰減權重
+        
+        Args:
+            n: 數據點數量
+            recent_weight_ratio: 近期權重比例（預設 0.6）
+            
+        Returns:
+            標準化後的權重列表（由舊到新順序，總和為 1）
+            
+        範例：
+            n=5, recent_weight_ratio=0.6
+            返回類似 [0.05, 0.08, 0.12, 0.20, 0.55] 的權重
+            最新數據（最後一個）佔約 55-60% 權重
+        """
+        import numpy as np
+        
+        if n < 2:
+            return [1.0]
+        
+        # 計算 lambda 參數
+        lam = self._calculate_lambda(n, recent_weight_ratio)
+        
+        # 計算指數衰減權重（從舊到新：i=0 最舊，i=n-1 最新）
+        indices = np.arange(n)
+        weights = np.exp(-lam * (n - 1 - indices))
+        
+        # 標準化權重（總和為 1）
+        weights = weights / np.sum(weights)
+        
+        return weights.tolist()
+    
+    def _calculate_time_weighted_growth_rate(
+        self,
+        eps_series: pd.Series,
+        recent_weight_ratio: float = 0.6
+    ) -> float:
+        """
+        使用時間加權計算成長率
+        
+        Args:
+            eps_series: EPS 時間序列（由舊到新排序）
+            recent_weight_ratio: 近期權重比例（預設 0.6）
+            
+        Returns:
+            時間加權成長率
+            
+        計算方法：
+            1. 計算各期間的成長率
+            2. 使用指數衰減權重計算加權平均
+            3. 近期成長率獲得更高權重
+        """
+        import numpy as np
+        
+        if len(eps_series) < 2:
+            return 0.15  # 預設值
+        
+        eps_values = eps_series.values
+        n = len(eps_values)
+        
+        # 計算各期間的年化成長率
+        growth_rates = []
+        for i in range(1, n):
+            if eps_values[i-1] > 0 and eps_values[i] > 0:
+                # 計算單期成長率（年化）
+                growth = (eps_values[i] / eps_values[i-1]) - 1
+                growth_rates.append(growth)
+            else:
+                growth_rates.append(0.0)
+        
+        if not growth_rates:
+            return 0.15
+        
+        # 計算指數衰減權重（n-1 個成長率對應 n-1 個權重）
+        weights = self._calculate_exponential_weights(len(growth_rates), recent_weight_ratio)
+        
+        # 計算加權平均成長率
+        weighted_growth = np.average(growth_rates, weights=weights)
+        
+        return weighted_growth
     
     # ==================== 內部方法 ====================
     
