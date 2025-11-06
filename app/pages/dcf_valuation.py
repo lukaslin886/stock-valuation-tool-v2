@@ -483,7 +483,6 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             # 使用 checkbox 取代 button，確保狀態持久化
             show_scenarios = st.checkbox(
                 "🔮 顯示三種情境比較",
-                value=st.session_state.get('show_scenarios', False),
                 key='show_scenarios',
                 help="計算並比較保守（-30%）、中性（當前）、樂觀（+30%）三種成長率假設下的估值"
             )
