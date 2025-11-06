@@ -337,29 +337,57 @@
   - ✅ 修復情境比較按鈕：從 st.button() 改為 st.checkbox()
   - ✅ 建立 app/pages/ 模組結構
   - ✅ 提取 show_dcf_valuation() 到獨立模組（約 700 行）
-  - ✅ main.py 從 2000 行縮減到 836 行（減少 58%）
+  - ✅ main.py 從 1690 行縮減到 836 行（減少 50.5%）
   - ✅ 刪除重複函式定義
   - ✅ 測試驗證所有功能正常
   - 完成日期：2025-11-05
   - 相關檔案：`app/main.py`, `app/pages/dcf_valuation.py`, `app/pages/__init__.py`
   - Git commit: da75698
   
-- [ ] **P2-46** 提取歷史回測頁面到獨立模組
-  - 提取 show_backtest() 到 pages/backtest.py
-  - 預估減少 200-300 行
+- [x] **P2-46** 提取歷史回測頁面到獨立模組 ✅
+  - ✅ 提取 show_backtest() 到 pages/backtest.py（170 行）
+  - ✅ 更新 pages/__init__.py 匯出
+  - ✅ 更新 main.py 導入並刪除重複函式
+  - ✅ main.py 從 836 行減至 673 行（減少 19.5%）
+  - 完成日期：2025-11-06
+  - 相關檔案：`app/pages/backtest.py`
+  - Git commit: cef43b2
   
-- [ ] **P2-47** 提取風險分析頁面到獨立模組
-  - 提取 show_risk_analysis() 到 pages/risk_analysis.py
-  - 預估減少 200-300 行
+- [x] **P2-47** 提取風險分析頁面到獨立模組 ✅
+  - ✅ 提取 show_risk_analysis() 到 pages/risk_analysis.py（266 行，5 個函式）
+  - ✅ 更新 pages/__init__.py 匯出
+  - ✅ 更新 main.py 導入並刪除重複函式
+  - ✅ main.py 從 673 行減至 407 行（減少 39.5%）
+  - 完成日期：2025-11-06
+  - 相關檔案：`app/pages/risk_analysis.py`
+  - Git commit: 64dbd30
   
-- [ ] **P2-48** 提取綜合報告頁面到獨立模組
-  - 提取 show_comprehensive_report() 到 pages/comprehensive_report.py
-  - 預估減少 200-300 行
+- [x] **P2-48** 提取綜合報告頁面到獨立模組 ✅
+  - ✅ 提取 show_comprehensive_report() 到 pages/comprehensive_report.py（261 行）
+  - ✅ 提取 get_recommendation_short_name() 輔助函式
+  - ✅ 更新 pages/__init__.py 匯出
+  - ✅ 更新 main.py 導入並刪除重複函式
+  - ✅ main.py 從 407 行減至 124 行（減少 69.5%）
+  - 完成日期：2025-11-06
+  - 相關檔案：`app/pages/comprehensive_report.py`
+  - Git commit: ff327ad
   
-- [ ] **P2-49** 完成 main.py 模組化重構收尾
-  - 預期最終目標：main.py < 300 行
-  - 所有頁面功能獨立模組化
-  - 更新文件說明新架構
+- [ ] **P2-49** 完成 main.py 模組化重構收尾（進行中）
+  - [x] 確認所有四個頁面模組提取完成
+  - [x] 清理 main.py 不必要的導入（移除 plotly, pandas, numpy, datetime, ReportGenerator）
+  - [x] main.py 最終優化至 118 行（累計減少 93%！）
+  - [ ] 更新 TODO.md 標記完成項目
+  - [ ] 更新 DEVELOPMENT_LOG.md 記錄重構歷程
+  - [ ] 最終 Git commit 標記 P2-49 完成
+  - 預計完成日期：2025-11-06
+  - **重構成果總結**：
+    - 起點：main.py 1690 行（未模組化）
+    - P2-45：1690 → 836 行（-50.5%）
+    - P2-46：836 → 673 行（-19.5%）
+    - P2-47：673 → 407 行（-39.5%）
+    - P2-48：407 → 124 行（-69.5%）
+    - P2-49：124 → 118 行（-5.0%）
+    - **最終：118 行（累計減少 93.0%）** 🎉
 
 ### 2.7 新標的推薦功能（買入建議 Phase 2）
 

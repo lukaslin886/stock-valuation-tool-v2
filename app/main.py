@@ -4,17 +4,11 @@
 """
 
 import streamlit as st
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime, timedelta
-import pandas as pd
-import numpy as np
 
 from dcf_calculator import DCFCalculator
 from data import DataManager
 from backtest import BacktestEngine
 from risk_analysis import RiskAnalyzer
-from report_generator import ReportGenerator
 
 # 導入頁面模組
 from pages import show_dcf_valuation, show_backtest, show_risk_analysis, show_comprehensive_report
