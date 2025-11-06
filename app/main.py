@@ -10,8 +10,8 @@ from data import DataManager
 from backtest import BacktestEngine
 from risk_analysis import RiskAnalyzer
 
-# 導入頁面模組
-from pages import show_dcf_valuation, show_backtest, show_risk_analysis, show_comprehensive_report
+# 導入頁面模組（從 views 目錄）
+from views import show_dcf_valuation, show_backtest, show_risk_analysis, show_comprehensive_report
 
 
 # 頁面配置

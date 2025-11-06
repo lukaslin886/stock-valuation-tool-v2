@@ -1,6 +1,6 @@
 """
-頁面模組
-包含所有 Streamlit 頁面的實作
+視圖模組
+包含所有 Streamlit 頁面視圖的實作
 """
 
 from .dcf_valuation import show_dcf_valuation
