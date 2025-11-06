@@ -307,8 +307,11 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
             st.info("💡 **建議**：請確認股票代碼是否正確，或稍後再試")
             return
     
-    # 計算按鈕
-    if st.button("🚀 開始計算", type="primary", use_container_width=True):
+    # 計算按鈕 - 重新計算時觸發
+    calculate_clicked = st.button("🚀 開始計算", type="primary", use_container_width=True)
+    
+    # 當按鈕被點擊時，執行計算並存入 session_state
+    if calculate_clicked:
         # 創建進度指示器
         calc_progress_text = st.empty()
         calc_progress_bar = st.progress(0)
@@ -336,7 +339,35 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
             calc_progress_bar.empty()
             calc_progress_text.empty()
             
-            # 顯示結果
+            # 將計算結果存入 session_state 以持久化
+            st.session_state['dcf_result'] = result
+            st.session_state['dcf_current_price'] = current_price
+            st.session_state['dcf_current_eps'] = current_eps
+            st.session_state['dcf_growth_rate_1'] = growth_rate_1
+            st.session_state['dcf_growth_rate_2'] = growth_rate_2
+            st.session_state['dcf_discount_rate'] = discount_rate
+            st.session_state['dcf_stock_code'] = stock_code
+            st.session_state['dcf_stock_name'] = stock_name
+            
+        except Exception as e:
+            calc_progress_bar.empty()
+            calc_progress_text.empty()
+            st.error(f"❌ 計算失敗: {str(e)}")
+            st.info("💡 **建議**：請檢查輸入參數，或聯繫技術支援")
+    
+    # 顯示結果（從 session_state 讀取，確保持久化）
+    if 'dcf_result' in st.session_state:
+        result = st.session_state['dcf_result']
+        current_price = st.session_state['dcf_current_price']
+        current_eps = st.session_state['dcf_current_eps']
+        growth_rate_1 = st.session_state['dcf_growth_rate_1']
+        growth_rate_2 = st.session_state['dcf_growth_rate_2']
+        discount_rate = st.session_state['dcf_discount_rate']
+        stock_code = st.session_state['dcf_stock_code']
+        stock_name = st.session_state['dcf_stock_name']
+        
+        # 顯示結果區塊
+        if result:
             st.markdown("---")
             st.subheader("📊 計算結果")
             
@@ -574,9 +605,3 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
 
 **建議**：合理的內在價值範圍應落在三種情境之間。若目前股價低於保守情境估值，可能是絕佳買點。
 """)
-            
-        except Exception as e:
-            calc_progress_bar.empty()
-            calc_progress_text.empty()
-            st.error(f"❌ 計算失敗: {str(e)}")
-            st.info("💡 **建議**：請檢查輸入參數，或聯繫技術支援")
