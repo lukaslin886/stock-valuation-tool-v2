@@ -372,14 +372,14 @@
   - 相關檔案：`app/pages/comprehensive_report.py`
   - Git commit: ff327ad
   
-- [ ] **P2-49** 完成 main.py 模組化重構收尾（進行中）
-  - [x] 確認所有四個頁面模組提取完成
-  - [x] 清理 main.py 不必要的導入（移除 plotly, pandas, numpy, datetime, ReportGenerator）
-  - [x] main.py 最終優化至 118 行（累計減少 93%！）
-  - [ ] 更新 TODO.md 標記完成項目
-  - [ ] 更新 DEVELOPMENT_LOG.md 記錄重構歷程
-  - [ ] 最終 Git commit 標記 P2-49 完成
-  - 預計完成日期：2025-11-06
+- [x] **P2-49** 完成 main.py 模組化重構收尾 ✅
+  - ✅ 確認所有四個頁面模組提取完成
+  - ✅ 清理 main.py 不必要的導入（移除 plotly, pandas, numpy, datetime, ReportGenerator）
+  - ✅ main.py 最終優化至 118 行（累計減少 93%！）
+  - ✅ 更新 TODO.md 標記完成項目
+  - ✅ 更新 DEVELOPMENT_LOG.md 記錄重構歷程
+  - ✅ 最終 Git commit 標記 P2-49 完成
+  - 完成日期：2025-11-06
   - **重構成果總結**：
     - 起點：main.py 1690 行（未模組化）
     - P2-45：1690 → 836 行（-50.5%）
@@ -388,6 +388,7 @@
     - P2-48：407 → 124 行（-69.5%）
     - P2-49：124 → 118 行（-5.0%）
     - **最終：118 行（累計減少 93.0%）** 🎉
+  - Git commit: [待完成]
 
 ### 2.7 新標的推薦功能（買入建議 Phase 2）
 
