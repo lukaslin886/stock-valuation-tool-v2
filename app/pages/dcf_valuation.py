@@ -357,17 +357,11 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
     
     # 顯示結果（從 session_state 讀取，確保持久化）
     if 'dcf_result' in st.session_state:
-        result = st.session_state['dcf_result']
-        current_price = st.session_state['dcf_current_price']
-        current_eps = st.session_state['dcf_current_eps']
-        growth_rate_1 = st.session_state['dcf_growth_rate_1']
-        growth_rate_2 = st.session_state['dcf_growth_rate_2']
-        discount_rate = st.session_state['dcf_discount_rate']
-        stock_code = st.session_state['dcf_stock_code']
-        stock_name = st.session_state['dcf_stock_name']
+        # 讀取儲存的結果，但不覆蓋當前變數
+        saved_result = st.session_state['dcf_result']
         
         # 顯示結果區塊
-        if result:
+        if saved_result:
             st.markdown("---")
             st.subheader("📊 計算結果")
             
@@ -377,16 +371,16 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
             with col1:
                 st.metric(
                     "內在價值",
-                    f"${result['intrinsic_value']:.2f}",
-                    delta=f"{result['upside_potential']:.1%}",
+                    f"${saved_result['intrinsic_value']:.2f}",
+                    delta=f"{saved_result['upside_potential']:.1%}",
                     delta_color="normal"
                 )
             
             with col2:
-                st.metric("目前股價", f"${result['current_price']:.2f}")
+                st.metric("目前股價", f"${saved_result['current_price']:.2f}")
             
             with col3:
-                st.metric("折現率", f"{result['discount_rate']:.1%}")
+                st.metric("折現率", f"{saved_result['discount_rate']:.1%}")
                 
             # DCF 估值說明
             st.info("""
@@ -409,7 +403,7 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             # 投資建議
             st.markdown("### 💡 投資建議")
             
-            recommendation = result['recommendation']
+            recommendation = saved_result['recommendation']
             if "強烈推薦" in recommendation:
                 st.success(f"✅ {recommendation}")
             elif "推薦" in recommendation:
@@ -421,7 +415,7 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             
             # 查看計算參數
             with st.expander("🔍 查看計算參數", expanded=False):
-                params = result['input_parameters']
+                params = saved_result['input_parameters']
                 
                 col1, col2 = st.columns(2)
                 
@@ -445,9 +439,9 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             st.markdown("### 📈 未來現金流預測")
             
             cash_flow_df = pd.DataFrame({
-                '年度': [f"第{i+1}年" for i in range(len(result['cash_flows']))],
-                '預測現金流': result['cash_flows'],
-                '現值': result['present_values']
+                '年度': [f"第{i+1}年" for i in range(len(saved_result['cash_flows']))],
+                '預測現金流': saved_result['cash_flows'],
+                '現值': saved_result['present_values']
             })
             
             fig = go.Figure()
@@ -485,10 +479,16 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             sens_progress = st.empty()
             sens_progress.info("📊 正在執行敏感性分析...")
             
+            # 從儲存的結果中讀取參數
+            saved_current_price = st.session_state['dcf_current_price']
+            saved_current_eps = st.session_state['dcf_current_eps']
+            saved_growth_rate_1 = st.session_state['dcf_growth_rate_1']
+            saved_growth_rate_2 = st.session_state['dcf_growth_rate_2']
+            
             sensitivity = st.session_state.dcf_calculator.sensitivity_analysis(
-                current_price=current_price,
-                current_eps=current_eps,
-                base_growth_rates=[growth_rate_1, growth_rate_2]
+                current_price=saved_current_price,
+                current_eps=saved_current_eps,
+                base_growth_rates=[saved_growth_rate_1, saved_growth_rate_2]
             )
             
             sens_progress.empty()
@@ -521,13 +521,18 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             # 從 session_state 讀取實際狀態（確保獲取最新值）
             if st.session_state.get('show_scenarios', False):
                 with st.spinner("計算情境比較中..."):
+                    # 從儲存的結果中讀取參數
+                    saved_discount_rate = st.session_state['dcf_discount_rate']
+                    saved_stock_code = st.session_state['dcf_stock_code']
+                    saved_stock_name = st.session_state['dcf_stock_name']
+                    
                     scenarios = st.session_state.dcf_calculator.calculate_scenario_comparison(
-                        current_price=current_price,
-                        current_eps=current_eps,
-                        base_growth_rates=[growth_rate_1, growth_rate_2],
-                        discount_rate=discount_rate,
-                        stock_code=stock_code,
-                        stock_name=stock_name,
+                        current_price=saved_current_price,
+                        current_eps=saved_current_eps,
+                        base_growth_rates=[saved_growth_rate_1, saved_growth_rate_2],
+                        discount_rate=saved_discount_rate,
+                        stock_code=saved_stock_code,
+                        stock_name=saved_stock_name,
                         data_source='YFinance/FinMind',
                         weighting_method=st.session_state.get('weighting_method', 'equal_weighted')
                     )
@@ -580,10 +585,10 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
                     
                     # 添加目前股價參考線
                     fig.add_hline(
-                        y=current_price,
+                        y=saved_current_price,
                         line_dash="dash",
                         line_color="orange",
-                        annotation_text=f"目前股價 ${current_price:.2f}",
+                        annotation_text=f"目前股價 ${saved_current_price:.2f}",
                         annotation_position="right"
                     )
                     
