@@ -122,6 +122,14 @@ def load_holdings_data(file_path: Path) -> Optional[pd.DataFrame]:
         except:
             df = pd.read_csv(file_path, encoding='utf-8-sig')
         
+        # 過濾掉摘要行（股票名稱以「總」開頭的行）
+        if '股票名稱' in df.columns:
+            original_count = len(df)
+            df = df[~df['股票名稱'].astype(str).str.startswith('總')]
+            removed_count = original_count - len(df)
+            if removed_count > 0:
+                print(f"[提示] 已過濾 {removed_count} 行摘要資料")
+        
         # 清理報酬率欄位（移除百分比符號並轉換為數值）
         if '報酬率' in df.columns:
             df['報酬率'] = df['報酬率'].astype(str).str.replace('%', '').astype(float)
