@@ -13,10 +13,12 @@ try {
     if ($LASTEXITCODE -eq 0) {
         Write-Host " OK" -ForegroundColor Green
         Write-Host "      Version: $pythonVersion" -ForegroundColor Gray
-    } else {
+    }
+    else {
         throw "Python not found"
     }
-} catch {
+}
+catch {
     Write-Host " Failed" -ForegroundColor Red
     Write-Host ""
     Write-Host "[ERROR] Python not found. Please install Python 3.8 or higher" -ForegroundColor Red
@@ -34,7 +36,8 @@ try {
     python -c "import streamlit" 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host " Installed" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host " Need installation" -ForegroundColor Yellow
         Write-Host ""
         Write-Host "[INFO] First run. Installing dependencies..." -ForegroundColor Yellow
@@ -47,19 +50,22 @@ try {
         if ($LASTEXITCODE -ne 0) {
             Write-Host ""
             Write-Host "[WARNING] Failed to upgrade build tools. Continuing anyway..." -ForegroundColor Yellow
-        } else {
+        }
+        else {
             Write-Host "[SUCCESS] Build tools upgraded successfully" -ForegroundColor Green
         }
         Write-Host ""
         
         # Step 2: Install dependencies
         Write-Host "[Step 2/2] Installing project dependencies..." -ForegroundColor Cyan
-        pip install -r requirements.txt
+        $reqPath = Join-Path $PSScriptRoot "requirements.txt"
+        pip install -r $reqPath
         
         if ($LASTEXITCODE -eq 0) {
             Write-Host ""
             Write-Host "[SUCCESS] Dependencies installed successfully" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host ""
             Write-Host "[ERROR] Failed to install dependencies" -ForegroundColor Red
             Write-Host ""
@@ -67,7 +73,8 @@ try {
             exit 1
         }
     }
-} catch {
+}
+catch {
     Write-Host " Check failed" -ForegroundColor Red
 }
 
@@ -85,11 +92,9 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Navigate to app directory and start
-Set-Location app
+# Navigate to app directory and start
+Set-Location (Join-Path $PSScriptRoot "app")
 streamlit run main.py
-
-# Return to original directory
-Set-Location ..
 
 Write-Host ""
 Write-Host "Application closed" -ForegroundColor Yellow

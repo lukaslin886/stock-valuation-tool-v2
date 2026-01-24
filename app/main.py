@@ -11,7 +11,7 @@ from backtest import BacktestEngine
 from risk_analysis import RiskAnalyzer
 
 # 導入頁面模組（從 views 目錄）
-from views import show_dcf_valuation, show_backtest, show_risk_analysis, show_comprehensive_report
+from views import show_dcf_valuation, show_backtest, show_risk_analysis, show_comprehensive_report, show_market_screener
 
 
 # 頁面配置
@@ -47,15 +47,23 @@ def main():
         # 功能選擇
         page = st.selectbox(
             "選擇功能",
-            ["DCF 估值", "歷史回測", "風險分析", "綜合報告"]
+            ["市場篩選器", "DCF 估值", "歷史回測", "風險分析", "綜合報告"]
         )
         
         st.markdown("---")
         
+        # 檢查是否從篩選器帶入股票
+        default_stock = "2330"
+        if 'selected_stock_from_screener' in st.session_state and st.session_state['selected_stock_from_screener']:
+            default_stock = st.session_state['selected_stock_from_screener']
+            # 清除狀態以免持續鎖定
+            # del st.session_state['selected_stock_from_screener'] 
+            # 註：不清除可保留選擇，但可能影響使用者手動修改，這裡選擇保留，讓 text_input 的 value 更新即可
+        
         # 股票輸入（支援代碼或名稱）
         stock_input = st.text_input(
             "股票代碼或名稱",
-            value="2330",
+            value=default_stock,
             help="請輸入台股代碼（例如：2330）或完整名稱（例如：台積電、TSMC）"
         )
         
@@ -101,7 +109,10 @@ def main():
         )
     
     # 根據選擇顯示不同頁面
-    if page == "DCF 估值":
+    if page == "市場篩選器":
+        from views import show_market_screener
+        show_market_screener(st.session_state.data_manager)
+    elif page == "DCF 估值":
         show_dcf_valuation(stock_code, stock_name, investment_amount)
     elif page == "歷史回測":
         show_backtest(stock_code, stock_name)
