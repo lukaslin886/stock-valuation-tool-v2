@@ -191,7 +191,8 @@ class MarketScanner:
     def perform_deep_scan(self, stock_codes: List[str], max_workers: int = 10, progress_callback=None) -> pd.DataFrame:
         """
         Perform deep analysis on a filtered list of stocks.
-        Fetches historical data to calculate Growth (CAGR) and Dividend Consistency.
+        Fetches historical data to calculate Growth (CAGR), Dividend Consistency, 
+        Valuation Position (PE/PB Bands), and a composite Low Base Score.
         
         Args:
             stock_codes: List of stock codes (str).
@@ -205,9 +206,9 @@ class MarketScanner:
             ticker_symbol = f"{code}.TW" if code.startswith(('1', '2')) else f"{code}.TWO"
             try:
                 ticker = yf.Ticker(ticker_symbol)
+                info = ticker.info
                 
-                # 1. Financials (Income Statement) for Growth
-                # yfinance financials are usually annual or quarterly
+                # --- 1. Growth Metrics (5Y & 10Y) ---
                 fin = ticker.financials
                 if fin.empty:
                     return None
@@ -216,50 +217,90 @@ class MarketScanner:
                 fin = fin[sorted(fin.columns)]
                 
                 # Get Revenue and Net Income (Profit)
-                # Rows might be named 'Total Revenue', 'Net Income' etc.
                 revenue_row = next((r for r in ['Total Revenue', 'Revenue', 'Operating Revenue'] if r in fin.index), None)
                 profit_row = next((r for r in ['Net Income', 'Net Income Common Stockholders'] if r in fin.index), None)
                 
-                cagr_revenue_5y = 0
-                cagr_profit_5y = 0
+                cagr_revenue_5y = 0.0
+                cagr_profit_5y = 0.0
+                cagr_revenue_10y = 0.0
+                cagr_profit_10y = 0.0
                 
                 if revenue_row:
                     revs = fin.loc[revenue_row].dropna()
                     cagr_revenue_5y = self._calculate_cagr(revs, 5)
+                    cagr_revenue_10y = self._calculate_cagr(revs, 10)
                     
                 if profit_row:
                     profits = fin.loc[profit_row].dropna()
                     cagr_profit_5y = self._calculate_cagr(profits, 5)
+                    cagr_profit_10y = self._calculate_cagr(profits, 10)
 
-                # 2. Dividends for Consistency
+                # --- 2. Dividend Consistency ---
                 divs = ticker.dividends
                 div_consecutive_years = 0
                 if not divs.empty:
-                    # Group by year
                     divs_by_year = divs.groupby(divs.index.year).sum()
-                    # Check recent years consistency
-                    current_year = datetime.now().year
-                    consistent = True
-                    # Check last 5 years excluding current incomplete year if needed
-                    # Let's count backwards from last year
                     last_year = divs_by_year.index.max()
                     count = 0
-                    for y in range(last_year, last_year - 10, -1):
+                    # Check last 15 years for safety
+                    for y in range(last_year, last_year - 15, -1):
                         if y in divs_by_year.index and divs_by_year.loc[y] > 0:
                             count += 1
                         else:
                             break
                     div_consecutive_years = count
 
+                # --- 3. Valuation Position (PE/PB Bands) ---
+                hist_5y = ticker.history(period="5y")
+                price_pos_5y = 0.5 # Default mid
+                if not hist_5y.empty:
+                    h_max = hist_5y['High'].max()
+                    h_min = hist_5y['Low'].min()
+                    curr = info.get('currentPrice', hist_5y['Close'].iloc[-1])
+                    if h_max > h_min:
+                        price_pos_5y = (curr - h_min) / (h_max - h_min)
+                
+                current_pe = info.get('trailingPE', 0)
+                
+                # --- 4. Composite Low Base Score ---
+                score_components = {
+                    'growth': (max(cagr_revenue_5y, 0) + max(cagr_profit_5y, 0)) * 100 / 2, # simplified %
+                    'dividend': min(div_consecutive_years * 5, 20), # Max 20 pts for 4+ years
+                    'valuation': 0,
+                    'price_low': (1 - price_pos_5y) * 30 # Max 30 pts if at 5y low
+                }
+                
+                # Valuation Score (PE < 15 is good, > 30 is bad)
+                val_score = 0
+                if current_pe > 0:
+                    if current_pe < 10: val_score = 30
+                    elif current_pe < 15: val_score = 25
+                    elif current_pe < 20: val_score = 15
+                    elif current_pe < 25: val_score = 5
+                    else: val_score = 0
+                score_components['valuation'] = val_score
+                
+                # Total Score
+                raw_score = (
+                    min(score_components['growth'], 20) + 
+                    score_components['dividend'] + 
+                    score_components['valuation'] + 
+                    score_components['price_low']
+                )
+                final_score = min(max(raw_score, 0), 100)
+
                 return {
                     'stock_code': code,
                     'revenue_cagr_5y': cagr_revenue_5y,
                     'profit_cagr_5y': cagr_profit_5y,
-                    'div_years': div_consecutive_years
+                    'revenue_cagr_10y': cagr_revenue_10y,
+                    'profit_cagr_10y': cagr_profit_10y,
+                    'div_years': div_consecutive_years,
+                    'price_pos_5y': price_pos_5y,
+                    'low_base_score': final_score
                 }
 
             except Exception as e:
-                # print(f"Deep scan error {code}: {e}")
                 return None
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -303,4 +344,3 @@ class MarketScanner:
             return cagr
         except:
             return 0.0
-

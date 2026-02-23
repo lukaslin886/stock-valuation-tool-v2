@@ -141,21 +141,34 @@ def show_market_screener(data_manager):
             final_df['dividend_yield_pct'] = final_df['dividend_yield'] * 100
             final_df['rev_cagr_pct'] = final_df['revenue_cagr_5y'] * 100
             final_df['prof_cagr_pct'] = final_df['profit_cagr_5y'] * 100
+            final_df['score'] = final_df['low_base_score'].fillna(0)
             
-            display_cols = ['stock_code', 'stock_name', 'current_price', 'market_cap_b', 'pe_ratio', 'rev_cagr_pct', 'prof_cagr_pct', 'div_years', 'price_position']
+            # Formatting helpers
+            def format_pos(x):
+                if x < 0.2: return "🟢 低檔"
+                if x > 0.8: return "🔴 高檔"
+                return "⚪ 中間"
+
+            final_df['pos_label'] = final_df['price_pos_5y'].apply(format_pos)
+
+            # Sort by Score descending
+            final_df = final_df.sort_values('score', ascending=False)
+            
+            display_cols = ['stock_code', 'stock_name', 'current_price', 'market_cap_b', 'pe_ratio', 'score', 'rev_cagr_pct', 'prof_cagr_pct', 'div_years', 'pos_label']
             rename_map = {
                 'stock_code': '代碼', 'stock_name': '名稱', 'current_price': '股價',
                 'market_cap_b': '市值(億)', 'pe_ratio': 'PE', 
-                'rev_cagr_pct': '營收成長%', 'prof_cagr_pct': '獲利成長%',
-                'div_years': '連配年數', 'price_position': '位階'
+                'score': '低基期分',
+                'rev_cagr_pct': '營收成長(5Y)%', 'prof_cagr_pct': '獲利成長(5Y)%',
+                'div_years': '連配年', 'pos_label': '5Y位階'
             }
             
             st.dataframe(
                 final_df[display_cols].rename(columns=rename_map).style.format({
                     '股價': '{:.2f}', '市值(億)': '{:.1f}', 'PE': '{:.1f}',
-                    '營收成長%': '{:.1f}%', '獲利成長%': '{:.1f}%',
-                    '位階': '{:.2f}'
-                })
+                    '低基期分': '{:.0f}',
+                    '營收成長(5Y)%': '{:.1f}%', '獲利成長(5Y)%': '{:.1f}%',
+                }).background_gradient(subset=['低基期分'], cmap='RdYlGn', vmin=0, vmax=100)
             )
             
             st.session_state['last_scan_results'] = final_df # Cache results in session?
