@@ -200,8 +200,15 @@ class DataManagerV2:
             self._save_to_memory_cache(cache_key, data)
             
             # 評估資料品質
-            quality = self._evaluate_data_quality(data, 'price')
+            validation_res = self._evaluate_data_quality(data, 'price', stock_code)
+            quality = validation_res['quality_score']
             self.quality_scores[stock_code].append(quality)
+            
+            # 記錄警告
+            if validation_res['warnings']:
+                self.data_warnings[stock_code].extend(validation_res['warnings'])
+                print(f"⚠️  價格數據警告: {', '.join(validation_res['warnings'])}")
+            
             print(f"✓ 價格數據品質評分: {quality:.1f}/100")
             
             return data
@@ -254,8 +261,15 @@ class DataManagerV2:
             self._save_to_memory_cache(cache_key, data)
             
             # 評估資料品質
-            quality = self._evaluate_data_quality(data, 'financial')
+            validation_res = self._evaluate_data_quality(data, 'financial', stock_code)
+            quality = validation_res['quality_score']
             self.quality_scores[stock_code].append(quality)
+            
+            # 記錄警告
+            if validation_res['warnings']:
+                self.data_warnings[stock_code].extend(validation_res['warnings'])
+                print(f"⚠️  財務數據警告: {', '.join(validation_res['warnings'])}")
+            
             print(f"✓ 財務數據品質評分: {quality:.1f}/100")
             
             return data
@@ -379,7 +393,8 @@ class DataManagerV2:
         
         # 2. 優先使用 MOPS（最準確的流通股數來源）
         for source in self.sources:
-            if isinstance(source, MOPSSource):
+            source_class_name = getattr(source, '__class__', type(source)).__name__
+            if source_class_name == 'MOPSSource' or 'MOPSSource' in str(type(source)) or 'MOPSSource' in str(source):
                 try:
                     print(f"  → 優先使用 MOPS 獲取流通股數...")
                     shares = source.get_shares_outstanding(stock_code, report_date)
@@ -481,12 +496,13 @@ class DataManagerV2:
             stock_code = stock_input
             # 嘗試獲取股票資訊以驗證
             info = self.get_stock_info(stock_code)
-            if info and 'name' in info:
+            name = info.get('name') or info.get('stock_name', '') if info else ''
+            if info and name:
                 return {
                     'is_valid': True,
                     'stock_code': stock_code,
-                    'stock_name': info['name'],
-                    'display_name': f"{stock_code} {info['name']}"
+                    'stock_name': name,
+                    'display_name': f"{stock_code} {name}"
                 }
             else:
                 # 即使無法獲取詳細資訊，也認為代碼格式有效
@@ -973,19 +989,28 @@ class DataManagerV2:
     def _evaluate_data_quality(
         self,
         data: pd.DataFrame,
-        data_type: str
-    ) -> float:
+        data_type: str,
+        stock_code: str = ""
+    ) -> Dict[str, Any]:
         """
         評估資料品質
         
         Args:
             data: 數據 DataFrame
             data_type: 數據類型 ('price' 或 'financial')
+            stock_code: 股票代碼
             
         Returns:
-            品質評分 (0-100)
+            驗證結果字典，包含 quality_score, warnings, issues 等
         """
-        score = 0.0
+        # 使用 DataValidator 進行深度檢查
+        if data_type == 'price':
+            validation = self.validator.validate_price_data(data, stock_code)
+        else:
+            validation = self.validator.validate_financial_data(data, stock_code)
+            
+        # 額外進行數據量權重計算（保留原有的基礎評分邏輯作為加乘因子）
+        base_score = 0.0
         
         # 1. 完整性檢查 (40分)
         required_cols = {
@@ -997,24 +1022,29 @@ class DataManagerV2:
             present_cols = sum(1 for col in required_cols[data_type] 
                              if col in data.columns)
             completeness = present_cols / len(required_cols[data_type])
-            score += completeness * 40
+            base_score += completeness * 40
         
         # 2. 數據量檢查 (30分)
-        expected_rows = {'price': 100, 'financial': 10}
+        expected_rows = {'price': 100, 'financial': 8}  # 財務資料 8 筆約兩年
         actual_rows = len(data)
         expected = expected_rows.get(data_type, 10)
         
         if actual_rows >= expected:
-            score += 30
+            base_score += 30
         else:
-            score += (actual_rows / expected) * 30
-        
+            base_score += (actual_rows / expected) * 30
+            
         # 3. 缺失值檢查 (30分)
         if len(data) > 0:
             non_null_ratio = 1 - (data.isnull().sum().sum() / (len(data) * len(data.columns)))
-            score += non_null_ratio * 30
+            base_score += non_null_ratio * 30
+            
+        # 最終分數結合：平均 DataValidator 的分數與數據量基礎分數
+        # 這能同時考量「數值合理性」與「資料充足度」
+        final_score = (validation['quality_score'] * 0.7) + (base_score * 0.3)
         
-        return min(100, max(0, score))
+        validation['quality_score'] = min(100, max(0, final_score))
+        return validation
 
 
 # 向下相容：保留舊名稱

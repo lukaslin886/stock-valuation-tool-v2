@@ -678,3 +678,20 @@ class TestIntegration:
         assert result1['intrinsic_value'] == pytest.approx(result2['intrinsic_value'])
         assert result2['intrinsic_value'] == pytest.approx(result3['intrinsic_value'])
         assert result1['upside_potential'] == pytest.approx(result2['upside_potential'])
+
+class TestScenarioComparison:
+    """測試情境比較功能"""
+    def test_calculate_scenario_comparison(self, dcf_calculator):
+        result = dcf_calculator.calculate_scenario_comparison(
+            current_price=100.0,
+            current_eps=10.0,
+            base_growth_rates=[0.10, 0.05],
+            discount_rate=0.10
+        )
+        assert '保守' in result
+        assert '中性' in result
+        assert '樂觀' in result
+        
+        # 內在價值應該 樂觀 > 基準 > 悲觀 
+        assert result['樂觀']['intrinsic_value'] > result['中性']['intrinsic_value']
+        assert result['中性']['intrinsic_value'] > result['保守']['intrinsic_value']

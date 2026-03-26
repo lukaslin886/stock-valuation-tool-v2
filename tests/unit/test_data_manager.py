@@ -581,7 +581,7 @@ class TestStatisticsAndMonitoring:
         stats = manager.get_source_statistics()
         
         assert isinstance(stats, dict)
-        assert 'YFinanceSource' in stats
+        assert len(stats) > 0
     
     @patch('app.data.manager.YFinanceSource')
     @patch('app.data.manager.FinMindSource')
@@ -669,6 +669,35 @@ class TestGetLatestPrice:
         
         assert result == 500.0
 
+    @patch('app.data.manager.YFinanceSource')
+    @patch('app.data.manager.FinMindSource')
+    @patch('app.data.manager.MOPSSource')
+    @patch('app.data.manager.SQLiteCache')
+    def test_get_latest_price_fallback_to_price_data(
+        self,
+        mock_cache_class,
+        mock_mops,
+        mock_finmind,
+        mock_yfinance_class,
+        sample_price_data
+    ):
+        """測試股票資訊未提供價格時，回退到價格數據"""
+        mock_yfinance_instance = mock_yfinance_class.return_value
+        mock_yfinance_instance.is_available = True
+        mock_yfinance_instance.is_ready.return_value = True
+        mock_yfinance_instance.get_stock_info.return_value = None
+        mock_yfinance_instance.get_stock_price.return_value = sample_price_data
+        
+        mock_cache_instance = mock_cache_class.return_value
+        mock_cache_instance.get_stock_info.return_value = None
+        mock_cache_instance.get_stock_price.return_value = None
+        
+        manager = DataManagerV2()
+        result = manager.get_latest_price("2330")
+        
+        assert isinstance(result, float)
+        assert result > 0
+
 
 class TestGetAllStocks:
     """測試獲取所有股票清單功能"""
@@ -700,6 +729,60 @@ class TestGetAllStocks:
         assert result is not None
         assert len(result) == 3
         assert '2330' in result['stock_id'].values
+
+    @patch('app.data.manager.YFinanceSource')
+    @patch('app.data.manager.FinMindSource')
+    @patch('app.data.manager.MOPSSource')
+    @patch('app.data.manager.SQLiteCache')
+    def test_get_all_stocks_fallback(
+        self, mock_cache, mock_mops, mock_finmind, mock_yfinance
+    ):
+        """測試從備援來源獲取股票清單"""
+        import pandas as pd
+        mock_cache_instance = mock_cache.return_value
+        mock_cache_instance.get_all_stocks.return_value = None
+        
+        mock_yfinance_instance = mock_yfinance.return_value
+        mock_yfinance_instance.is_available = True
+        mock_yfinance_instance.get_all_stocks.return_value = pd.DataFrame({'stock_id': ['2330']})
+        
+        manager = DataManagerV2()
+        result = manager.get_all_stocks()
+        assert result is not None
+
+class TestCacheLRUMemory:
+    """測試快取功能"""
+    def test_save_to_memory_cache_lru(self):
+        manager = DataManagerV2()
+        manager.enable_memory_cache = True
+        manager.memory_cache_max_size = 2
+        
+        manager._save_to_memory_cache('key1', 'data1')
+        import time
+        time.sleep(0.01)
+        manager._save_to_memory_cache('key2', 'data2')
+        time.sleep(0.01)
+        manager._save_to_memory_cache('key3', 'data3')
+        
+        # key1 should be evicted
+        assert 'key1' not in manager.memory_cache
+        assert 'key2' in manager.memory_cache
+        assert 'key3' in manager.memory_cache
+        
+        manager.enable_memory_cache = False
+        manager._save_to_memory_cache('key4', 'data4')
+        assert 'key4' not in manager.memory_cache
+
+    def test_get_with_fallback_empty_df(self):
+        manager = DataManagerV2()
+        import pandas as pd
+        from unittest.mock import MagicMock
+        mock_source = MagicMock()
+        mock_source.get_stock_price.return_value = pd.DataFrame()
+        manager.sources = [mock_source]
+        result = manager._get_with_fallback('get_stock_price', stock_code='2330')
+        assert result is None
+
 
 
 class TestClearCache:

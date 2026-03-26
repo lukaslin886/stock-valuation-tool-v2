@@ -393,14 +393,16 @@ class DataValidator:
             quality_scores = [v.get('quality_score', 0) for v in validations]
             avg_quality = sum(quality_scores) / len(quality_scores)
         
+        valid_pct = (valid / total * 100) if total > 0 else 0.0
+        
         report = f"""
 資料驗證摘要報告
 {'='*50}
 總驗證項目: {total}
-有效項目: {valid} ({valid/total*100:.1f}%)
+有效項目: {valid} ({valid_pct:.1f}%)
 警告數量: {warnings}
 平均品質分數: {avg_quality:.1f}/100
 
-狀態: {'✓ 通過' if valid == total else '⚠ 發現問題'}
+狀態: {'✓ 通過' if valid == total and total > 0 else '⚠ 發現問題' if total > 0 else '無資料'}
 """
         return report

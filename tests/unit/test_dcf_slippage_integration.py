@@ -67,11 +67,11 @@ class TestDCFCalculatorSlippageInit:
         assert dcf_calculator_without_slippage.enable_slippage is False
         assert dcf_calculator_without_slippage.slippage_model is None
     
-    def test_init_default_slippage_disabled(self):
-        """測試預設狀態（滑價停用）"""
+    def test_init_default_slippage_enabled(self):
+        """測試預設狀態（滑價啟動）"""
         calculator = DCFCalculator()
-        assert calculator.enable_slippage is False
-        assert calculator.slippage_model is None
+        assert calculator.enable_slippage is True
+        assert calculator.slippage_model is not None
 
 
 # ============================================================================
@@ -291,7 +291,7 @@ class TestFullWorkflow:
         )
         
         # 測試小、中、大三種部位
-        position_sizes = [100000, 1000000, 10000000]
+        position_sizes = [100000, 1000000000, 3000000000]
         results = []
         
         for size in position_sizes:

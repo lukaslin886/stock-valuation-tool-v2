@@ -271,15 +271,22 @@ class DCFCalculator:
             discount_pct = result['discount_pct'] * 100
             if discount_pct > 30:
                 priority = '🔴 優先級 A'
+                priority_code = 'A'
             elif discount_pct > 15:
                 priority = '🟡 優先級 B'
+                priority_code = 'B'
             else:
                 priority = '🟢 優先級 C'
+                priority_code = 'C'
             
+            result['priority'] = priority_code
             result['recommendation'] = f'{priority} - 低估 {discount_pct:.1f}%，建議於 ${result["recommended_buy_price"]:.2f} 以下買入'
         else:
-            overprice_pct = (current_price - base_buy_price) / base_buy_price * 100
-            result['recommendation'] = f'⚠️ 不建議 - 目前價格高於建議買入價 {overprice_pct:.1f}%'
+            if base_buy_price > 0:
+                overprice_pct = (current_price - base_buy_price) / base_buy_price * 100
+                result['recommendation'] = f'⚠️ 不建議 - 目前價格高於建議買入價 {overprice_pct:.1f}%'
+            else:
+                result['recommendation'] = f'⚠️ 不建議 - 沒有內在價值'
         
         return result
     

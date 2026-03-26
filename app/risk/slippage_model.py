@@ -456,7 +456,6 @@ class SlippageModel:
                 position_size=position_size,
                 reference_date=trade_date
             )
-            
             if slippage_info['is_valid']:
                 adjusted_trades.loc[idx, 'adjusted_price'] = slippage_info['adjusted_price']
                 adjusted_trades.loc[idx, 'slippage_pct'] = slippage_info['total_slippage_pct']

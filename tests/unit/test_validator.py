@@ -376,13 +376,13 @@ class TestDetectOutliers:
         """測試使用 Z-score 方法偵測異常值"""
         validator = DataValidator()
         
-        # 建立含異常值的序列
-        data = pd.Series([10, 12, 11, 13, 12, 10, 100, 11, 12, 13])
+        # 建立含異常值的序列 (長度須夠長以超越 Z-score 3 閾值限制)
+        data = pd.Series([10, 12, 11, 13, 12, 10, 11, 12, 13] * 10 + [500])
         
         outliers = validator._detect_outliers(data, method='zscore')
         
         assert len(outliers) > 0
-        assert 100 in outliers.values
+        assert 500 in outliers.values
     
     def test_detect_no_outliers(self):
         """測試沒有異常值的情況"""

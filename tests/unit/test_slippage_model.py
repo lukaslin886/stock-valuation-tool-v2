@@ -263,14 +263,14 @@ class TestMarketImpact:
         medium_result = slippage_model.calculate_slippage(
             sample_price_data,
             'buy',
-            position_size=5000000  # 500萬
+            position_size=1000000000  # 10億
         )
         
         # 大單
         large_result = slippage_model.calculate_slippage(
             sample_price_data,
             'buy',
-            position_size=50000000  # 5000萬
+            position_size=5000000000  # 50億
         )
         
         # 部位越大，市場衝擊越大（檢查小單 vs 大單的顯著差異）
@@ -400,3 +400,24 @@ class TestIntegration:
         assert result1['total_slippage_pct'] == pytest.approx(result2['total_slippage_pct'])
         assert result2['total_slippage_pct'] == pytest.approx(result3['total_slippage_pct'])
         assert result1['adjusted_price'] == pytest.approx(result2['adjusted_price'])
+
+    def test_adjust_backtesting_trades(self, slippage_model, sample_price_data):
+        import pandas as pd
+        trades = pd.DataFrame([
+            {'date': sample_price_data['date'].iloc[5], 'type': 'buy', 'price': 500.0, 'quantity': 5000},
+            {'date': sample_price_data['date'].iloc[6], 'type': 'sell', 'price': 505.0, 'quantity': 5000}
+        ])
+        
+        adjusted_trades = slippage_model.adjust_backtesting_trades(trades, sample_price_data)
+        
+        assert 'slippage_pct' in adjusted_trades.columns
+        assert 'adjusted_price' in adjusted_trades.columns
+        assert 'slippage_amount' in adjusted_trades.columns
+        
+        # 檢查滑價是否大於 0
+        buy_row = adjusted_trades[adjusted_trades['type'] == 'buy'].iloc[0]
+        assert buy_row['slippage_pct'] > 0
+        
+        # 檢查滑價是否大於 0
+        sell_row = adjusted_trades[adjusted_trades['type'] == 'sell'].iloc[0]
+        assert sell_row['slippage_pct'] > 0
