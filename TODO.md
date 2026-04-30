@@ -1,7 +1,7 @@
 # 台股 DCF 估值工具 - 開發待辦清單
 
-> 📅 **最後更新**：2026-02-23  
-> 📦 **當前版本**：v1.7.5-dev  
+> 📅 **最後更新**：2026-05-01  
+> 📦 **當前版本**：v1.8.8-dev  
 > 👨‍💻 **維護者**：AI 協作開發
 
 ---
@@ -27,12 +27,12 @@
 
 ## 📊 進度概覽
 
-- **Phase 1（短期）**：11/15 完成 (73%)
-- **Phase 2（中期）**：21/39 完成 (54%)
+- **Phase 1（短期）**：15/15 完成 (100%) 🎉
+- **Phase 2（中期）**：27/39 完成 (69%)
 - **Phase 3（長期）**：0/33 完成 (0%)
 - **Phase 4（維運）**：0/13 完成 (0%)
 
-**總進度**：32/100 完成 (32%)
+**總進度**：42/100 完成 (42%)
 
 ---
 
@@ -68,17 +68,23 @@
   - 完成日期：2025-10-30
   - 相關檔案：`app/main.py`
   
-- [ ] **P1-06** 改善錯誤訊息的使用者友善度
-  - 使用白話文說明錯誤
-  - 提供解決建議
+- [x] **P1-06** 改善錯誤訊息的使用者友善度 ✅
+  - ✅ 將主要分析頁面的錯誤訊息改為「可能原因 + 建議作法」
+  - ✅ 補充可操作的重試指引（參數、期間、代碼格式）
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/views/dcf_valuation.py`, `app/views/backtest.py`, `app/views/risk_analysis.py`, `app/views/comprehensive_report.py`
   
-- [ ] **P1-07** 增加操作提示與說明文字
-  - 為每個輸入欄位添加 tooltip
-  - 提供範例數值
+- [x] **P1-07** 增加操作提示與說明文字 ✅
+  - ✅ 為主介面與市場篩選、風險分析關鍵欄位補上 tooltip
+  - ✅ 補充常用參數範例與使用情境說明
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/main.py`, `app/views/dcf_valuation.py`, `app/views/market_screener.py`, `app/views/risk_analysis.py`
   
-- [ ] **P1-08** 建立使用者操作指南頁面
-  - 在 Streamlit 中添加「使用說明」頁面
-  - 包含常見問題 FAQ
+- [x] **P1-08** 建立使用者操作指南頁面 ✅
+  - ✅ 新增「使用說明」頁面（快速上手 + FAQ + 資料來源）
+  - ✅ 導航列加入「使用說明」並可直接切換
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/views/user_guide.py`, `app/views/__init__.py`, `app/main.py`
 
 ### 1.3 測試與驗證
 
@@ -88,9 +94,13 @@
   - 完成日期：2025-10-28
   - 測試結果：100% 成功率（A+ 優秀）
   
-- [ ] **P1-10** 驗證不同時間區間的回測準確度
-  - 測試 1年、3年、5年回測
-  - 分析預測準確率
+- [x] **P1-10** 驗證不同時間區間的回測準確度 ✅
+  - ✅ 測試 1年、3年、5年回測時間視窗（`years_windows=[1, 3, 5]`）
+  - ✅ 驗證 `BacktestEngine.validate_time_window_accuracy()` 正確比較準確率並回傳最佳視窗
+  - ✅ 測試覆蓋：全部成功（3/3）、部分失敗（2/3）、全部失敗（0/3）三種情境
+  - ✅ 模擬結果：1年 61%、3年 68%（最佳）、5年 64%；平均 64.3%
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/backtest.py`, `tests/unit/test_backtest_engine.py`
   
 - [x] **P1-11** 確認 FinMind API Token 權限範圍 ✅
   - ✅ 測試 API 權限與端點可用性
@@ -174,25 +184,39 @@
 
 ### 2.2 功能擴充
 
-- [ ] **P2-06** 增加產業比較功能
-  - 比較同產業股票估值
-  - 顯示產業平均 P/E, P/B
+- [x] **P2-06** 增加產業比較功能 ✅
+  - ✅ 在 DCF 估值頁新增同業比較卡片與同業明細表
+  - ✅ 以 FinMind 股票主檔取得產業分類，結合 market snapshot 計算產業平均 P/E、P/B
+  - ✅ 若缺少市場快照資料，提供「先到市場篩選器更新數據」的退化提示
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/data/manager.py`, `app/views/dcf_valuation.py`, `tests/unit/test_data_manager.py`
   
-- [ ] **P2-07** 支援投資組合分析（多檔股票）
-  - 同時分析多檔股票
-  - 計算投資組合風險與報酬
+- [x] **P2-07** 支援投資組合分析（多檔股票） ✅
+  - ✅ 支援 2-10 檔股票的動態輸入、權重配置與總和驗證
+  - ✅ 顯示投資組合核心指標（P/E、風險、報酬、Sharpe）與持股明細
+  - ✅ 整合 `PortfolioAnalyzer` 並修復投資組合頁面語法問題
+  - ✅ 新增 view 匯入健全性測試，避免 UI 模組語法錯誤回滲
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/views/portfolio_analysis.py`, `app/portfolio/analyzer.py`, `tests/unit/test_portfolio_analyzer.py`, `tests/unit/test_views_imports.py`
   
-- [ ] **P2-08** 添加技術分析指標（MA, MACD, RSI）
-  - 整合 TA-Lib 或 pandas-ta
-  - 在圖表上顯示技術指標
+- [x] **P2-08** 添加技術分析指標（MA, MACD, RSI） ✅
+  - ✅ 在 DataManagerV2 新增 `get_technical_indicators()`，計算 MA5/20/60、MACD(12,26,9)、RSI(14)
+  - ✅ 在 DCF 估值頁新增技術指標圖（價格+均線、MACD、RSI）
+  - ✅ 新增 2 個單元測試，覆蓋成功/資料不足兩種情境
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/data/manager.py`, `app/views/dcf_valuation.py`, `tests/unit/test_data_manager.py`
   
-- [ ] **P2-09** 實作股票篩選功能（依條件搜尋）
-  - 依 P/E, 殖利率, ROE 等條件篩選
-  - 支援多條件組合篩選
+- [x] **P2-09** 實作股票篩選功能（依條件搜尋） ✅
+  - ✅ 依 P/E、殖利率、ROE 條件篩選
+  - ✅ 支援多條件組合篩選
+  - 完成日期：2026-04-30
+  - 相關檔案：`app/market_scanner.py`, `app/views/market_screener.py`, `tests/unit/test_market_scanner.py`
   
-- [ ] **P2-10** 新增個股基本面評分系統
-  - 綜合財務指標評分
-  - 產生投資評級（A+ 到 D）
+- [x] **P2-10** 新增個股基本面評分系統 ✅
+  - ✅ 綜合財務指標評分
+  - ✅ 產生投資評級（A+ 到 D）
+  - 完成日期：2026-05-01
+  - 相關檔案：`app/market_scanner.py`, `app/views/market_screener.py`, `tests/unit/test_market_scanner.py`
 
 ### 2.3 資料管理
 
@@ -218,12 +242,21 @@
   - 目標：測試覆蓋率 > 80% (實際已達 83-97%)
   - 完成日期：2026-02-23 (與 P1-12 同步)
   
-- [ ] **P2-16** 實作持續整合（GitHub Actions）
+- [x] **P2-16** 實作持續整合（GitHub Actions） ✅
   - 自動執行測試
   - 自動產生測試報告
+  - ✅ 已完成最小可用版本：新增 `uv` smoke workflow（核心單元測試）
+  - ✅ 已完成完整單元測試矩陣：Python 3.10 / 3.11 / 3.12 / 3.13
+  - ✅ 已完成測試報告上傳：`coverage.xml`、`reports/test_report.html`
+  - 完成日期：2026-04-30
   
-- [ ] **P2-17** 建立程式碼品質檢查（pylint, black）
-  - 強制程式碼格式化
+- [x] **P2-17** 建立程式碼品質檢查（pylint, black） ✅
+  - ✅ 新增 `uv-lint.yml`，在 GitHub Actions 執行 `black --check` 與 `pylint`
+  - ✅ `pyproject.toml` 新增 black / pylint 設定與 dev 依賴
+  - ✅ black 檢查結果：39 個檔案符合格式（0 變更）
+  - ✅ pylint 基準分數：9.62/10（門檻設定：7.0）
+  - 完成日期：2026-04-30
+  - 相關檔案：`pyproject.toml`, `.github/workflows/uv-lint.yml`, `uv.lock`
   - 檢查程式碼品質分數
   
 - [ ] **P2-18** 撰寫 API 文件（使用 Sphinx）
@@ -489,6 +522,32 @@
 ---
 
 ## 📝 版本更新記錄
+
+### v1.8.4 (2026-04-30) - 產業比較功能上線
+- ✅ 完成 **P2-06**：DCF 頁面新增同業比較卡片與同業估值明細
+- ✅ 新增 `DataManagerV2.get_industry_comparison()`，整合 FinMind 產業分類與 market snapshot
+- ✅ 產業平均 P/E、P/B 可直接顯示，並附帶本股與同業差值
+- ✅ 測試驗證：`uv run pytest tests/unit -q` 通過 279 tests
+
+### v1.8.3 (2026-04-30) - CI 完整單元測試矩陣
+- ✅ 完成 **P2-16**：新增 `uv` full unit workflow（Python 3.10-3.13）
+- ✅ CI 產出並上傳 `coverage.xml` 與 `pytest` HTML 報告 artifact
+- ✅ 保留 smoke workflow 作為快速基線檢查
+- ✅ Phase 2 完成：移除 `ticker.earnings` 路徑，改為 `income_stmt / financials` EPS 備援計算
+- ✅ `uv run pytest tests/unit -q` 驗證 277 passed，警告摘要已清空
+
+### v1.8.2 (2026-04-30) - UV 環境隔離落地
+- ✅ 新增 `pyproject.toml` 與 `uv.lock`，建立專案級隔離環境
+- ✅ `run-en.ps1` 改為 `uv sync` + `uv run streamlit run app/main.py`
+- ✅ `run_tests.bat` 改為 `uv sync --extra dev` + `uv run pytest`
+- ✅ 新增 GitHub Actions `uv` smoke workflow（核心測試）
+- ✅ 修正 pandas 版本相容性（`<3.0.0`）並清理測試中的 `Q` 週期警告來源
+
+### v1.8.1 (2026-04-30) - 使用體驗與引導強化
+- ✅ 完成 **P1-06**：錯誤訊息白話化與可行修正建議
+- ✅ 完成 **P1-07**：關鍵輸入欄位 tooltip 與範例提示
+- ✅ 完成 **P1-08**：新增「使用說明」頁面與 FAQ
+- ✅ 側邊欄新增「使用說明」導覽入口，降低新使用者上手門檻
 
 ### v1.7.0 (2025-11-06) - 市場掃描器與路徑修復
 - ✅ 新增 Market Screener 模組 (可針對市值、PE、殖利率初步篩選)

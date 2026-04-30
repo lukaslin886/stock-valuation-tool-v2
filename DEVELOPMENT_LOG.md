@@ -6,7 +6,238 @@
 
 ## 最新更新
 
-### v1.8.0 (2025-11-06) ⭐ 當前版本
+### v1.8.8 (2026-05-01)
+
+**P2-10 個股基本面評分系統完成（0-100 分 + A+~D）** ✅
+
+**核心改善**:
+- ✅ `MarketScanner` 新增基本面評分器，依 `roe`、`pe_ratio`、`pb_ratio`、`dividend_yield`、`revenue_growth` 計算 0-100 分
+- ✅ 新增評級映射規則（A+、A、B+、B、C、D）
+- ✅ 在 `filter_stocks()` 套用評分結果，輸出 `fundamental_score` 與 `fundamental_grade`
+- ✅ 保持相容性：舊 snapshot 缺少 `roe/pb_ratio/dividend_yield/revenue_growth` 時不會拋錯
+- ✅ 市場篩選頁初篩表格新增基本面分數與評級欄位
+- ✅ 單元測試新增 3 個情境：高品質高評級、弱基本面低評級、缺欄位/缺值容錯
+
+**調整檔案**:
+- `app/market_scanner.py`
+- `app/views/market_screener.py`
+- `tests/unit/test_market_scanner.py`
+- `artifacts/plan_p2_10_fundamental_scoring_20260501.md`（新增）
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_market_scanner.py -q` → PASSED
+2. `uv run python -m py_compile app/market_scanner.py app/views/market_screener.py` → PASSED
+
+**預期效益**:
+1. 在市場快篩中可直接辨識基本面品質，降低二次人工篩選成本
+2. 評分邏輯集中於資料層，後續可擴展到綜合報告與跨模組評分
+3. 透過容錯與單元測試，降低資料缺值與規則調整造成的回歸風險
+
+### v1.8.7 (2026-04-30) ⭐ 當前版本
+
+**P2-09 股票篩選功能完成（P/E + 殖利率 + ROE 多條件）** ✅
+
+**核心改善**:
+- ✅ `MarketScanner` 市場快照新增 `roe` 欄位（來源：`yfinance` 的 `returnOnEquity`）
+- ✅ `filter_stocks()` 新增 `min_roe` 參數，支援與市值、P/E、殖利率、低基期條件聯合篩選
+- ✅ 向下相容舊快照：若缺少 `roe` 欄位，篩選流程不會拋錯
+- ✅ 市場篩選頁新增 ROE 門檻控制項，並在結果表顯示殖利率與 ROE
+- ✅ 新增 `test_market_scanner.py`，覆蓋多條件交集與缺欄位相容情境
+
+**調整檔案**:
+- `app/market_scanner.py`
+- `app/views/market_screener.py`
+- `tests/unit/test_market_scanner.py`（新增）
+- `artifacts/plan_p2_09_stock_screener_20260430.md`（新增）
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_market_scanner.py -q` → PASSED
+2. `uv run python -m py_compile app/market_scanner.py app/views/market_screener.py` → PASSED
+
+**預期效益**:
+1. 使用者可直接以價值（PE）、股東報酬（ROE）、現金回饋（殖利率）做組合式快篩
+2. 篩選結果更貼近基本面選股流程，降低人工二次過濾成本
+3. 透過回歸測試避免篩選條件擴充時出現相容性退化
+
+### v1.8.6 (2026-04-30)
+
+**P2-08 技術指標上線（MA / MACD / RSI）** ✅
+
+**核心改善**:
+- ✅ `DataManagerV2` 新增 `get_technical_indicators()`，使用既有價格資料計算 MA5/20/60、MACD、RSI
+- ✅ DCF 頁面新增技術指標可視化區塊（股價+均線 / MACD / RSI 三層圖）
+- ✅ 新增資料層單元測試（成功情境 + 資料不足情境）
+
+**調整檔案**:
+- `app/data/manager.py`
+- `app/views/dcf_valuation.py`
+- `tests/unit/test_data_manager.py`
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_data_manager.py -q` → PASSED
+2. `uv run python -m py_compile app/views/dcf_valuation.py app/data/manager.py` → PASSED
+
+**預期效益**:
+1. 使用者可在估值頁同步檢視價值面（DCF）與技術面（MA/MACD/RSI）
+2. 技術指標邏輯集中於資料層，後續可重用到市場篩選與報告頁
+3. 以單元測試降低技術指標公式變更造成的回歸風險
+
+### v1.8.5 (2026-04-30)
+
+**P2-07 投資組合分析結案（語法修復 + 回歸防護）** ✅
+
+**核心改善**:
+- ✅ 修復 `app/views/portfolio_analysis.py` 的重複 keyword 參數語法錯誤
+- ✅ 投資組合輸入表格欄位對齊（代碼 / 名稱 / 權重 / 操作）
+- ✅ 修復 `app/views/market_screener.py` 的匯入路徑，確保 `app.views` 套件可被正常匯入
+- ✅ 保留既有 `PortfolioAnalyzer` 計算流程，確認 20 個核心單元測試全數通過
+- ✅ 新增 `test_views_imports.py`，建立 UI 模組匯入回歸檢查
+
+**調整檔案**:
+- `app/views/portfolio_analysis.py`
+- `app/views/market_screener.py`
+- `tests/unit/test_views_imports.py`（新增）
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run python -m py_compile app/views/portfolio_analysis.py` → PASSED（修復後）
+2. `uv run pytest tests/unit/test_portfolio_analyzer.py tests/unit/test_views_imports.py -q` → 21 passed
+
+**預期效益**:
+1. 避免投資組合頁面因語法錯誤導致整個頁面無法載入
+2. 將此類 UI 模組解析錯誤前移到測試階段攔截
+3. P2-07 功能與文件狀態一致，可正式視為結案
+
+### v1.8.4 (2026-04-30)
+
+**P2-06 產業比較功能上線** ✅
+
+**核心改善**:
+- ✅ `DataManagerV2` 新增 `get_industry_comparison()`，集中處理同業比較資料
+- ✅ 使用 FinMind 股票主檔取得產業分類，避免在 DCF 頁逐檔打外部 API
+- ✅ 整合 `data/market_scan.db` 的 market snapshot，計算產業平均 P/E、P/B
+- ✅ DCF 頁面新增「同業比較」卡片，可直接查看同業樣本數、產業平均倍數與同業明細
+- ✅ 若市場快照尚未建立，頁面會引導使用者先到市場篩選器更新數據
+- ✅ 補上 2 個 DataManager 單元測試；全套單元測試提升為 279 passed
+
+**調整檔案**:
+- `app/data/manager.py`
+- `app/views/dcf_valuation.py`
+- `tests/unit/test_data_manager.py`
+- `TODO.md`
+- `pyproject.toml`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_data_manager.py -q` → 34 passed
+2. `uv run pytest tests/unit -q` → 279 passed
+
+**預期效益**:
+1. 使用者在估值頁就能快速知道本股是否高於或低於同業平均倍數
+2. 產業比較邏輯集中在資料層，後續可重用到綜合報告與市場篩選功能
+3. 缺少市場快照時會退化提示，不會讓 DCF 主流程失敗
+
+### v1.8.3 (2026-04-30) 
+
+**CI 擴充 + yfinance 清理 + P1-10/P2-17 結案** ✅
+
+**核心改善**:
+- ✅ 新增 `.github/workflows/uv-unit-test.yml`
+- ✅ 在 GitHub Actions 以 Python 3.10 / 3.11 / 3.12 / 3.13 執行 `tests/unit`
+- ✅ 自動上傳測試報告 artifact（`coverage.xml` 與 `reports/test_report.html`）
+- ✅ 保留 `uv-smoke-test.yml` 作為快速基線驗證
+- ✅ Phase 2 警告清理：移除 `YFinanceSource.get_latest_eps()` 對 `ticker.earnings` 的依賴
+- ✅ EPS 備援改為 `income_stmt / financials` 計算，避免 yfinance deprecated API 警告
+- ✅ Phase 2.5 警告門控：`pytest.ini` 新增 `error::DeprecationWarning:yfinance.*`，防止廢棄 API 悄悄回滲
+- ✅ P1-10 正式結案：`BacktestEngine.validate_time_window_accuracy()` 驗證 1/3/5 年回測，全 3 測試通過
+- ✅ P2-17 程式碼品質檢查：新增 `uv-lint.yml`，導入 `black --check` 與 `pylint --fail-under=7.0`
+- ✅ 本地 lint 基準驗證完成：black 39 檔 0 變更、pylint 9.62/10
+
+**調整檔案**:
+- `.github/workflows/uv-unit-test.yml`（新增）
+- `.github/workflows/uv-lint.yml`（新增）
+- `TODO.md`（P1-10 結案、Phase 1 100%）
+- `pytest.ini`（新增 yfinance 警告門控）
+- `pyproject.toml`（新增 black / pylint 設定）
+- `uv.lock`（新增 lint 依賴鎖定）
+- `app/data/sources/yfinance_source.py`
+- `tests/unit/test_sources.py`
+- `tests/unit/test_backtest_engine.py`（3 測試 PASSED）
+
+**預期效益**:
+1. PR 階段可跨 Python 版本攔截相容性問題
+2. 測試結果可直接由 CI artifact 下載與追蹤
+3. 持續整合流程與 UV 隔離策略保持一致
+4. 單元測試輸出更乾淨，降低外部套件棄用噪音
+5. Phase 1 全部 15 項正式關閉（100%），階段完成
+6. Lint 品質檢查正式納入 CI，可在 PR 階段攔截格式與靜態品質問題
+
+### v1.8.2 (2026-04-30)
+
+**UV 環境隔離導入完成（環境不互汙）** ✅
+
+**核心改善**:
+- ✅ 新增 `pyproject.toml`，將專案依賴正式納入 `uv` 管理
+- ✅ 產生並提交 `uv.lock`，確保跨機器可重現安裝
+- ✅ `run-en.ps1` 改為 `uv sync` 與 `uv run streamlit run app/main.py`
+- ✅ `run_tests.bat` 改為 `uv sync --extra dev` 與 `uv run pytest`
+- ✅ 新增 GitHub Actions `uv` smoke workflow，建立最小 CI 驗證基線
+- ✅ 調整 pandas 相容性約束為 `<3.0.0`，避免既有測試在 pandas 3 上失敗
+- ✅ 清理季度頻率測試參數 `Q -> QE`，移除相容性警告來源
+
+**調整檔案**:
+- `pyproject.toml`（新增）
+- `uv.lock`（新增）
+- `run-en.ps1`
+- `run_tests.bat`
+- `.github/workflows/uv-smoke-test.yml`（新增）
+- `requirements.txt`
+- `tests/conftest.py`
+- `tests/unit/test_validator.py`
+
+**驗證結果**:
+1. `uv sync --extra dev` 可建立隔離環境並完成依賴同步
+2. 核心測試在 `uv run pytest` 下可通過（含 `test_backtest_engine`）
+
+**預期效益**:
+1. 避免全域 pip/python 汙染，提升專案隔離性
+2. 新成員可用單一流程快速重建一致環境
+3. 測試與執行流程標準化，降低「在我機器能跑」風險
+
+### v1.8.1 (2026-04-30)
+
+**使用體驗優化（P1-06 / P1-07 / P1-08）完成** ✅
+
+**核心改善**:
+- ✅ 新增「使用說明」頁面（快速上手、FAQ、資料來源說明）
+- ✅ 主導航加入「使用說明」入口
+- ✅ 補強欄位提示（tooltip）與參數範例（主頁、風險分析、市場篩選）
+- ✅ 將錯誤訊息改為白話文並附「可能原因 + 建議作法」
+
+**調整檔案**:
+- `app/main.py`
+- `app/views/__init__.py`
+- `app/views/user_guide.py`（新增）
+- `app/views/dcf_valuation.py`
+- `app/views/backtest.py`
+- `app/views/risk_analysis.py`
+- `app/views/market_screener.py`
+- `app/views/comprehensive_report.py`
+
+**預期效益**:
+1. 新使用者可在 1-3 分鐘內完成首次分析流程
+2. 常見失敗情境可直接在畫面中獲得重試方向
+3. 參數調整成本降低，減少反覆試錯時間
+
+---
+
+### v1.8.0 (2025-11-06)
 
 **main.py 模組化重構完成** 🎉
 
@@ -205,7 +436,7 @@ ff327ad - [P2-48] refactor: 提取綜合報告頁面到獨立模組
 ## 專案資訊
 
 - **專案名稱**: 台股 DCF 估值工具 (Taiwan Stock DCF Valuation Tool)
-- **當前版本**: v1.8.0
+- **當前版本**: v1.8.3
 - **開發日期**: 2025年10月26日 - 至今
 - **開發者**: AI協作開發
 - **專案目的**: 為台股散戶投資者提供基於 DCF（現金流折現）模型的股票估值分析工具
@@ -289,7 +520,7 @@ stock-valuation-tool/
 
 ---
 
-**最後更新**: 2025-11-06  
+**最後更新**: 2026-04-30  
 **文檔版本**: 2.0.0  
 **專案狀態**: 穩定運行 ✅  
 **資料覆蓋率**: 100% (前50大股票)
