@@ -43,6 +43,18 @@
 - **市場掃描：Layered 優先但必須保留 Legacy 評分/篩選的相容 adapter，並以 Golden Master 驗證後才可接線。**
 - **快取層：Layered 優先，但以 adapter 保留 Legacy 的 `stock_info`/`financial_data`/`price_data` 讀取能力；不可直接共用同一 schema。**
 
+## 即時來源品質量測狀態
+
+2026-08-20 執行前置檢查時，FinLab token 與 FinMind token 存在，MOPS 公開網站回應 HTTP 200。
+但兩個需要登入的來源均未完成資料樣本量測：
+
+- FinMind token 登入回傳 `OSError`；目前只記錄錯誤類型，不把 token 或錯誤內容寫入紀錄。
+- 目前安裝的 FinLab 套件沒有 `finlab.login`，而 `app/infra/sources/finlab_source.py` 呼叫該不存在的 API，回傳 `AttributeError`。
+- 因此目前不能宣稱 FinMind/FinLab 的完整度、更新頻率或失敗率比較已完成。
+
+下一步應先固定 FinLab 相依套件版本與正確登入 API，並診斷 FinMind 的 TLS/網路環境；完成後才能重跑來源品質表。
+在此之前，Canonical 決策維持「FinLab 主要來源候選、MOPS 輔助來源、FinMind 備援候選」，不刪除任何來源。
+
 ## 限制
 
 本次 baseline 是 deterministic local input，不代表即時 API 品質判定；因此不應據此刪除
