@@ -48,6 +48,8 @@ data/*.db
 # 日誌
 *.log
 logs/
+.test_logs/
+.test_logs_create/
 
 # 測試
 .pytest_cache/
@@ -57,6 +59,15 @@ htmlcov/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Finance integration cleanup (explicit generated artifacts)
+cloudflared.exe
+coverage.xml
+reports/*.html
+MY_STOCK/
+
+# Sphinx docs build output
+docs/_build/
 
 # pyenv
 .python-version
