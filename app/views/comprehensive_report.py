@@ -85,7 +85,7 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
         # 顯示建議訊息
         if suggestion_message:
             if default_gr1 < 0 or default_gr2 < 0:
-                st.warning(f"⚠️ {suggestion_message}")
+                st.warning(f"[WARN] {suggestion_message}")
             else:
                 st.info(f"💡 {suggestion_message}")
     
@@ -123,7 +123,7 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
                 st.info(f"投資建議: {dcf_result['recommendation']}")
                 
                 # 風險分析
-                st.markdown("## ⚠️ 風險評估")
+                st.markdown("## [WARN] 風險評估")
                 
                 risk_report = st.session_state.risk_analyzer.comprehensive_risk_report(
                     stock_code=stock_code,
@@ -287,7 +287,7 @@ def show_comprehensive_report(stock_code: str, stock_name: str, investment_amoun
                 # 免責聲明
                 st.markdown("---")
                 st.warning(
-                    "⚠️ **免責聲明**: "
+                    "[WARN] **免責聲明**: "
                     "本工具僅供參考，不構成投資建議。"
                     "投資有風險，請謹慎評估後再做決定。"
                 )

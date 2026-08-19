@@ -159,13 +159,7 @@ class DCFCalculator:
         discount_rate: float
     ) -> List[float]:
         """計算現金流現值"""
-
-        present_values = []
-        for year, cash_flow in enumerate(cash_flows, 1):
-            present_value = cash_flow / ((1 + discount_rate) ** year)
-            present_values.append(present_value)
-
-        return present_values
+        return [cf / ((1 + discount_rate) ** y) for y, cf in enumerate(cash_flows, 1)]
 
     def _calculate_terminal_value(
         self,
@@ -284,9 +278,9 @@ class DCFCalculator:
         else:
             if base_buy_price > 0:
                 overprice_pct = (current_price - base_buy_price) / base_buy_price * 100
-                result['recommendation'] = f'⚠️ 不建議 - 目前價格高於建議買入價 {overprice_pct:.1f}%'
+                result['recommendation'] = f'[WARN] 不建議 - 目前價格高於建議買入價 {overprice_pct:.1f}%'
             else:
-                result['recommendation'] = f'⚠️ 不建議 - 沒有內在價值'
+                result['recommendation'] = f'[WARN] 不建議 - 沒有內在價值'
         
         return result
     

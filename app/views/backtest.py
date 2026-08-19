@@ -123,7 +123,7 @@ def show_backtest(stock_code: str, stock_name: str):
                 
                 # 顯示成功訊息
                 if 'failed_points' in results and results['failed_points'] > 0:
-                    st.warning(f"⚠️ 部分回測點失敗（{results['failed_points']} 個），但已成功完成部分回測")
+                    st.warning(f"[WARN] 部分回測點失敗（{results['failed_points']} 個），但已成功完成部分回測")
                 
                 # 顯示摘要
                 st.markdown("---")

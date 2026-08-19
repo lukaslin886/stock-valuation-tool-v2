@@ -12,7 +12,7 @@ def show_risk_analysis(stock_code: str, stock_name: str, investment_amount: floa
     
     # 組合顯示名稱
     display_title = f"{stock_code} {stock_name}" if stock_name else stock_code
-    st.header(f"⚠️ 風險分析 - {display_title}")
+    st.header(f"[WARN] 風險分析 - {display_title}")
     
     # 分析選項
     analysis_type = st.radio(

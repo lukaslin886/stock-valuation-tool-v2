@@ -40,7 +40,7 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
         # 顯示數據來源說明（負成長時顯示警告）
         if growth_message:
             if suggested_gr1 < 0 or suggested_gr2 < 0:
-                st.warning(f"⚠️ {growth_message}")
+                st.warning(f"[WARN] {growth_message}")
             else:
                 st.info(f"📊 {growth_message}")
         
@@ -156,14 +156,14 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
             if current_price > 0:
                 st.metric("目前股價", f"${current_price:.2f}")
             else:
-                st.warning("⚠️ 無法獲取股價，請檢查股票代碼")
+                st.warning("[WARN] 無法獲取股價，請檢查股票代碼")
                 return
             
             if current_eps > 0:
                 st.metric("最新 EPS", f"${current_eps:.2f}")
                 st.metric("本益比", f"{current_price/current_eps:.2f}")
             else:
-                st.warning("⚠️ 無法獲取 EPS 數據")
+                st.warning("[WARN] 無法獲取 EPS 數據")
                 return
             
             # 計算建議成長率
@@ -242,14 +242,14 @@ def show_dcf_valuation(stock_code: str, stock_name: str, investment_amount: floa
                             
                             if ENABLE_TIME_WEIGHTING:
                                 st.caption(
-                                    f"✓ 使用指數衰減時間加權（EWMA）  \n"
-                                    f"✓ 近期權重比例：{RECENT_WEIGHT_RATIO*100:.0f}%  \n"
-                                    f"✓ 最近一年數據權重更高，更能反映近期趨勢"
+                                    f"[OK] 使用指數衰減時間加權（EWMA）  \n"
+                                    f"[OK] 近期權重比例：{RECENT_WEIGHT_RATIO*100:.0f}%  \n"
+                                    f"[OK] 最近一年數據權重更高，更能反映近期趨勢"
                                 )
                                 
                                 # 權重分配說明
                                 # 計算實際權重分配
-                                from app.data.manager import DataManagerV2
+                                from data.manager import DataManagerV2
                                 example_weights = DataManagerV2._calculate_exponential_weights(
                                     None, 5, RECENT_WEIGHT_RATIO
                                 )
@@ -409,7 +409,7 @@ DCF（現金流量折現法）計算的內在價值會因為輸入參數不同�
             elif "推薦" in recommendation:
                 st.info(f"ℹ️ {recommendation}")
             elif "考慮" in recommendation:
-                st.warning(f"⚠️ {recommendation}")
+                st.warning(f"[WARN] {recommendation}")
             else:
                 st.error(f"❌ {recommendation}")
             

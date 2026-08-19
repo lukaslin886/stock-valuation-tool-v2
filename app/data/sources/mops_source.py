@@ -48,14 +48,14 @@ class MOPSSource(DataSource):
             
             if response.status_code == 200:
                 self.is_available = True
-                print(f"✓ {self.name} 資料來源初始化成功")
+                print(f"[OK] {self.name} 資料來源初始化成功")
             else:
                 self.is_available = False
-                print(f"✗ {self.name} 資料來源初始化失敗：HTTP {response.status_code}")
+                print(f"[FAIL] {self.name} 資料來源初始化失敗：HTTP {response.status_code}")
                 
         except Exception as e:
             self.is_available = False
-            print(f"✗ {self.name} 資料來源初始化失敗：{str(e)}")
+            print(f"[FAIL] {self.name} 資料來源初始化失敗：{str(e)}")
     
     def _convert_roc_to_ad(self, roc_year: int, month: int = 1, day: int = 1) -> datetime:
         """
@@ -182,14 +182,14 @@ class MOPSSource(DataSource):
                     if not row.empty:
                         so_str = str(row.iloc[0][shares_col]).replace(",", "")
                         so = int(float(so_str))
-                        print(f"  ✓ {self.name} 獲取流通股數: {so:,}")
+                        print(f"  [OK] {self.name} 獲取流通股數: {so:,}")
                         return so
             
-            print(f"  ✗ 未找到 {stock_code} 的流通股數")
+            print(f"  [FAIL] 未找到 {stock_code} 的流通股數")
             return None
             
         except Exception as e:
-            print(f"  ✗ {self.name} 獲取流通股數失敗：{str(e)}")
+            print(f"  [FAIL] {self.name} 獲取流通股數失敗：{str(e)}")
             return None
     
     def _download_capital_change_csv(
@@ -217,7 +217,7 @@ class MOPSSource(DataSource):
                 try:
                     df = pd.read_csv(cache_file, encoding='utf-8')
                     if not df.empty:
-                        print(f"  ✓ 從快取讀取股本異動表")
+                        print(f"  [OK] 從快取讀取股本異動表")
                         return df
                 except Exception:
                     pass
@@ -264,15 +264,15 @@ class MOPSSource(DataSource):
                 
                 # 儲存到快取
                 df.to_csv(cache_file, index=False, encoding='utf-8')
-                print(f"  ✓ 成功下載並快取股本異動表")
+                print(f"  [OK] 成功下載並快取股本異動表")
                 
                 return df
             else:
-                print(f"  ✗ 無法在回應中找到股本異動表標題")
+                print(f"  [FAIL] 無法在回應中找到股本異動表標題")
                 return None
                 
         except Exception as e:
-            print(f"  ✗ 下載股本異動表失敗：{str(e)}")
+            print(f"  [FAIL] 下載股本異動表失敗：{str(e)}")
             return None
     
     def get_stock_info(self, stock_code: str) -> Optional[Dict]:
@@ -300,7 +300,7 @@ class MOPSSource(DataSource):
                     if datetime.now() - file_time < timedelta(days=7):
                         df = pd.read_csv(cache_file, encoding='utf-8')
                         if not df.empty:
-                            print(f"  ✓ 從快取讀取公司資訊")
+                            print(f"  [OK] 從快取讀取公司資訊")
                             return df.iloc[0].to_dict()
                 except Exception:
                     pass
@@ -329,7 +329,7 @@ class MOPSSource(DataSource):
             response.encoding = 'utf-8'
             
             if response.status_code != 200:
-                print(f"  ✗ 請求失敗：HTTP {response.status_code}")
+                print(f"  [FAIL] 請求失敗：HTTP {response.status_code}")
                 return None
             
             # 解析 HTML 回應
@@ -341,14 +341,14 @@ class MOPSSource(DataSource):
                 df_info = pd.DataFrame([info])
                 df_info.to_csv(cache_file, index=False, encoding='utf-8')
                 
-                print(f"  ✓ 成功獲取公司資訊")
+                print(f"  [OK] 成功獲取公司資訊")
                 return info
             else:
-                print(f"  ✗ 解析公司資訊失敗")
+                print(f"  [FAIL] 解析公司資訊失敗")
                 return None
                 
         except Exception as e:
-            print(f"  ✗ 獲取公司資訊失敗：{str(e)}")
+            print(f"  [FAIL] 獲取公司資訊失敗：{str(e)}")
             return None
     
     def _parse_company_info_html(self, html: str, stock_code: str) -> Optional[Dict]:
@@ -393,7 +393,7 @@ class MOPSSource(DataSource):
                             return info
                             
                 except Exception as e:
-                    print(f"  ⚠️ 解析公司資訊 CSV 失敗: {str(e)}")
+                    print(f"  [WARN] 解析公司資訊 CSV 失敗: {str(e)}")
             
             # 如果上述方法失敗，嘗試使用 pd.read_html
             try:
@@ -422,7 +422,7 @@ class MOPSSource(DataSource):
             }
             
         except Exception as e:
-            print(f"  ⚠️ 解析公司資訊失敗：{str(e)}")
+            print(f"  [WARN] 解析公司資訊失敗：{str(e)}")
             return None
     
     def get_all_stocks(self) -> Optional[pd.DataFrame]:
@@ -434,5 +434,5 @@ class MOPSSource(DataSource):
         Returns:
             None（不支援此功能）
         """
-        print(f"⚠️ {self.name} 簡化版不提供股票清單功能")
+        print(f"[WARN] {self.name} 簡化版不提供股票清單功能")
         return None

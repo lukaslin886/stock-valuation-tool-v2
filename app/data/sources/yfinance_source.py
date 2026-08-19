@@ -25,10 +25,10 @@ class YFinanceSource(DataSource):
             test_ticker = yf.Ticker("2330.TW")
             _ = test_ticker.info
             self.is_available = True
-            print("✓ YFinance 已準備就緒")
+            print("[OK] YFinance 已準備就緒")
         except Exception as e:
             self.is_available = False
-            print(f"✗ YFinance 初始化失敗: {str(e)}")
+            print(f"[FAIL] YFinance 初始化失敗: {str(e)}")
     
     def _normalize_ticker(self, stock_code: str) -> str:
         """

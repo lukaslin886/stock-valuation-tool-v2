@@ -10,6 +10,7 @@ import numpy as np
 
 from dcf_calculator import DCFCalculator
 from data import DataManager
+from risk.slippage_model import SlippageModel
 
 
 class BacktestEngine:
@@ -86,7 +87,7 @@ class BacktestEngine:
         
         if len(valid_eps) < 2:
             error_msg = f'EPS 數據不足（僅 {len(valid_eps)} 筆），無法進行回測。建議選擇其他股票或縮短回測期間。'
-            print(f"⚠️ {error_msg}")
+            print(f"[WARN] {error_msg}")
             return {'error': error_msg}
 
         # 生成回測點
@@ -111,10 +112,10 @@ class BacktestEngine:
             
             if result:
                 results.append(result)
-                print(f"  ✓ 點 {idx}/{len(backtest_points)}: {test_date.strftime('%Y-%m-%d')} - 成功")
+                print(f"  [OK] 點 {idx}/{len(backtest_points)}: {test_date.strftime('%Y-%m-%d')} - 成功")
             else:
                 failed_points.append(test_date)
-                print(f"  ✗ 點 {idx}/{len(backtest_points)}: {test_date.strftime('%Y-%m-%d')} - 失敗（數據不足）")
+                print(f"  [FAIL] 點 {idx}/{len(backtest_points)}: {test_date.strftime('%Y-%m-%d')} - 失敗（數據不足）")
 
         print(f"\n回測完成:")
         print(f"  成功: {len(results)} 個點")
@@ -133,7 +134,7 @@ class BacktestEngine:
         analysis = self._analyze_backtest_results(results)
         
         if 'error' in analysis:
-            print(f"⚠️ {analysis['error']}")
+            print(f"[WARN] {analysis['error']}")
         else:
             print(f"✅ 分析完成")
             print(f"   有效預測: {analysis.get('valid_predictions', 0)} 筆")
@@ -213,9 +214,22 @@ class BacktestEngine:
         future_price_df = price_data[price_data['date'] >= future_date]
         
         actual_return = None
+        slippage_cost = 0.0
         if len(future_price_df) > 0:
             future_price = future_price_df.iloc[0]['close_price']
-            actual_return = (future_price - current_price) / current_price
+            
+            # 套用滑價模型
+            try:
+                # 擷取當時的 K 棒資料以計算滑價
+                recent_data = price_data[price_data['date'] <= test_date].tail(20)
+                if len(recent_data) >= 2:
+                    slippage = SlippageModel.calculate_slippage(recent_data)
+                    # 買進與賣出均有滑價成本
+                    slippage_cost = (slippage['buy_slippage_pct'] + slippage['sell_slippage_pct']) / 100.0
+            except Exception as e:
+                print(f"[WARN] 滑價計算失敗，忽略滑價: {e}")
+                
+            actual_return = ((future_price - current_price) / current_price) - slippage_cost
 
         return {
             'date': test_date,
@@ -224,6 +238,7 @@ class BacktestEngine:
             'intrinsic_value': dcf_result['intrinsic_value'],
             'predicted_upside': dcf_result['upside_potential'],
             'actual_return': actual_return,
+            'slippage_cost_applied': slippage_cost,
             'recommendation': dcf_result['recommendation']
         }
 

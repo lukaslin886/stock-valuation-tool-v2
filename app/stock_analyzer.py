@@ -6,8 +6,8 @@
 import re
 from typing import Dict, List, Tuple, Optional
 import pandas as pd
-from app.data import DataManager
-from app.dcf_calculator import DCFCalculator
+from data import DataManager
+from dcf_calculator import DCFCalculator
 
 
 class StockAnalyzer:
@@ -24,6 +24,10 @@ class StockAnalyzer:
     # 核心龍頭股代碼
     CORE_STOCKS = ['2330', '2317']  # 台積電、鴻海
     
+    # ETF 判斷關鍵字
+    ETF_KEYWORDS = ['元大', '富邦', '國泰', '中信', '永豐', 'ETF']
+    ETF_INDICATORS = ['台灣50', '高股息', '美債', '日本', '日經', '公司治理', '中小', '永續', '科技', '電動車', '綠能', '儲能', '小資']
+    
     def __init__(self):
         """初始化分析器"""
         self.data_manager = DataManager()
@@ -39,19 +43,7 @@ class StockAnalyzer:
         Returns:
             True 表示是 ETF
         """
-        # ETF 通常包含這些關鍵字
-        etf_keywords = ['元大', '富邦', '國泰', '中信', '永豐', 'ETF']
-        
-        # 或者股票代碼是 00 開頭、05 開頭
-        if any(keyword in stock_name for keyword in etf_keywords):
-            # 進一步檢查是否真的是 ETF（包含指數名稱等）
-            etf_indicators = ['台灣50', '高股息', '美債', '日本', '日經', 
-                            '公司治理', '中小', '永續', '科技', '電動車',
-                            '綠能', '儲能', '小資']
-            if any(indicator in stock_name for indicator in etf_indicators):
-                return True
-        
-        return False
+        return any(k in stock_name for k in self.ETF_KEYWORDS) and any(i in stock_name for i in self.ETF_INDICATORS)
     
     def extract_stock_code(self, stock_name: str) -> Optional[str]:
         """

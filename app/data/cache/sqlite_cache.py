@@ -81,11 +81,11 @@ class SQLiteCache(CacheBackend):
             conn.close()
             
             self.is_available = True
-            print("✓ SQLite 快取已準備就緒")
+            print("[OK] SQLite 快取已準備就緒")
             
         except Exception as e:
             self.is_available = False
-            print(f"✗ SQLite 快取初始化失敗: {str(e)}")
+            print(f"[FAIL] SQLite 快取初始化失敗: {str(e)}")
     
     def get_stock_price(
         self,

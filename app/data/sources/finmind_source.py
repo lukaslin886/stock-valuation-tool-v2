@@ -33,10 +33,10 @@ class FinMindSource(DataSource):
             if self.api_token:
                 self.data_loader.login_by_token(api_token=self.api_token)
             self.is_available = True
-            print("✓ FinMind 已準備就緒")
+            print("[OK] FinMind 已準備就緒")
         except Exception as e:
             self.is_available = False
-            print(f"✗ FinMind 初始化失敗: {str(e)}")
+            print(f"[FAIL] FinMind 初始化失敗: {str(e)}")
     
     def get_stock_price(
         self,

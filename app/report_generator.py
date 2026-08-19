@@ -32,15 +32,15 @@ class ReportGenerator:
             font_path = "C:/Windows/Fonts/msjh.ttc"
             pdfmetrics.registerFont(TTFont('MSJH', font_path))
             self.chinese_font = 'MSJH'
-            print(f"✓ 成功註冊中文字體: {self.chinese_font}")
+            print(f"[OK] 成功註冊中文字體: {self.chinese_font}")
         except Exception as e:
-            print(f"⚠️ 字體註冊失敗，嘗試備用字體: {str(e)}")
+            print(f"[WARN] 字體註冊失敗，嘗試備用字體: {str(e)}")
             try:
                 # 備用：標楷體
                 font_path = "C:/Windows/Fonts/kaiu.ttf"
                 pdfmetrics.registerFont(TTFont('Kaiu', font_path))
                 self.chinese_font = 'Kaiu'
-                print(f"✓ 成功註冊備用中文字體: {self.chinese_font}")
+                print(f"[OK] 成功註冊備用中文字體: {self.chinese_font}")
             except Exception as e2:
                 print(f"❌ 所有字體註冊失敗: {str(e2)}")
                 self.chinese_font = 'Helvetica'  # 最後使用預設字體
