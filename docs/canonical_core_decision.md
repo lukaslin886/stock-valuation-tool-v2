@@ -33,10 +33,14 @@
 - Layered cache 成功寫入並讀回 `market_snapshot`，並額外回傳 `stale` 狀態。
 - Legacy schema 為 `stock_info`、`financial_data`、`price_data`。
 - Layered schema 為 `market_snapshot`、`chip_data`、`trade_signals`、`paper_trades`。
+- 相同三筆評分 fixture 的結果為 `(8,18,4): Legacy 70/B、Layered 83/A`、
+	`(12,14,6): Legacy 95/A+、Layered 97/A+`、`(20,8,8): 兩者皆 100/A+`。
+- 評分差異來自 Layered 新增 ROE、PE 與殖利率的分段加分規則；市場掃描輸出不能直接視為等價。
 
 據此更新暫定決策：
 
 - **資料來源：保留 MOPS 作為股本異動/公司資訊輔助來源，不作為完整財報或股價 Canonical source；FinLab 作為 Layered 的主要市場資料來源，仍需補 live-source 品質量測。**
+- **市場掃描：Layered 優先但必須保留 Legacy 評分/篩選的相容 adapter，並以 Golden Master 驗證後才可接線。**
 - **快取層：Layered 優先，但以 adapter 保留 Legacy 的 `stock_info`/`financial_data`/`price_data` 讀取能力；不可直接共用同一 schema。**
 
 ## 限制
