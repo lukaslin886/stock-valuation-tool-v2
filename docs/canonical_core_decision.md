@@ -46,14 +46,15 @@
 ## 即時來源品質量測狀態
 
 2026-08-20 執行前置檢查時，FinLab token 與 FinMind token 存在，MOPS 公開網站回應 HTTP 200。
-但兩個需要登入的來源均未完成資料樣本量測：
+第一次量測受虛擬環境殘留與環境變數影響，修復後完成三檔代表股票的讀取：
 
-- FinMind token 登入回傳 `OSError`；目前只記錄錯誤類型，不把 token 或錯誤內容寫入紀錄。
-- 目前安裝的 FinLab 套件沒有 `finlab.login`，而 `app/infra/sources/finlab_source.py` 呼叫該不存在的 API，回傳 `AttributeError`。
-- 因此目前不能宣稱 FinMind/FinLab 的完整度、更新頻率或失敗率比較已完成。
+- FinMind 的 2330、2317、2454 均成功回傳 8 筆資料，日期範圍為 2026-08-10 至 2026-08-19。
+- FinLab `price:收盤價` 包含 2,771 檔；上述三檔均存在，但全表與各欄最後日期皆為 2018-12-28。
+- FinMind 的近期資料能力已通過此三檔 smoke test；FinLab 的資料可用但明顯過期，不適合作為目前股價的唯一來源。
+- 測試前曾發現 `REQUESTS_CA_BUNDLE`/`CURL_CA_BUNDLE` 指向不存在的 Hermes certifi 路徑，已在測試程序內改用目前虛擬環境的 `certifi.where()`；這是環境設定問題，不是程式碼修正。
 
-下一步應先固定 FinLab 相依套件版本與正確登入 API，並診斷 FinMind 的 TLS/網路環境；完成後才能重跑來源品質表。
-在此之前，Canonical 決策維持「FinLab 主要來源候選、MOPS 輔助來源、FinMind 備援候選」，不刪除任何來源。
+因此更新來源級決策為：**FinMind 作為近期價格主來源；FinLab 作為歷史資料/備援候選；MOPS 作為股本異動與公司資訊輔助來源。**
+三個來源均不得在本階段刪除；FinMind 的帳號等級限制與 FinLab 的資料新鮮度仍需在正式 adapter 中以健康檢查呈現。
 
 ## 限制
 
