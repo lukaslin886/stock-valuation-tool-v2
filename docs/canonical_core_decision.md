@@ -24,6 +24,21 @@
 | 市場掃描 | 待判定 | Legacy 與 Layered 的資料模型與快取邊界不同 | Task 3.4 fixture 比對 |
 | 快取層 | 待判定 | Layered 已有 DI/SQLite 測試，但尚未比對 Legacy snapshot 行為 | Task 3.4 fixture 比對 |
 
+## 離線 fixture 探針結果
+
+2026-08-20 使用暫存 SQLite 資料庫執行，不需要 API 金鑰或網路：
+
+- MOPS `get_stock_price()` 與 `get_financial_data()` 均回傳 `None`，因此不能作為完整股價/財報來源。
+- Legacy cache 成功寫入並讀回 `stock_info`。
+- Layered cache 成功寫入並讀回 `market_snapshot`，並額外回傳 `stale` 狀態。
+- Legacy schema 為 `stock_info`、`financial_data`、`price_data`。
+- Layered schema 為 `market_snapshot`、`chip_data`、`trade_signals`、`paper_trades`。
+
+據此更新暫定決策：
+
+- **資料來源：保留 MOPS 作為股本異動/公司資訊輔助來源，不作為完整財報或股價 Canonical source；FinLab 作為 Layered 的主要市場資料來源，仍需補 live-source 品質量測。**
+- **快取層：Layered 優先，但以 adapter 保留 Legacy 的 `stock_info`/`financial_data`/`price_data` 讀取能力；不可直接共用同一 schema。**
+
 ## 限制
 
 本次 baseline 是 deterministic local input，不代表即時 API 品質判定；因此不應據此刪除

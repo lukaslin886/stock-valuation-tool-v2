@@ -76,6 +76,19 @@ class SQLiteCache(CacheBackend):
                     UNIQUE(stock_code, date)
                 )
             ''')
+
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_price_data_stock_code_update_time
+                ON price_data (stock_code, update_time)
+            ''')
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_financial_data_stock_code_update_time
+                ON financial_data (stock_code, update_time)
+            ''')
+            cursor.execute('''
+                CREATE INDEX IF NOT EXISTS idx_stock_info_update_time
+                ON stock_info (update_time)
+            ''')
             
             conn.commit()
             conn.close()
