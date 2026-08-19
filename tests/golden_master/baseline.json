@@ -1,0 +1,1555 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-19T16:02:40.877753+00:00",
+  "source_mode": "deterministic_local_inputs",
+  "market_scan": {
+    "status": "not_captured",
+    "reason": "Live source quality requires configured API credentials and network access."
+  },
+  "cache": {
+    "status": "not_captured",
+    "reason": "Cache equivalence requires the source snapshot fixture from Task 3.4."
+  },
+  "cases": [
+    {
+      "stock_code": "1101",
+      "inputs": {
+        "current_price": 80.0,
+        "current_eps": 4.0,
+        "growth_rates": [
+          0.06,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "1101"
+      },
+      "legacy": {
+        "current_price": 80.0,
+        "intrinsic_value": 83.61609209550227,
+        "upside_potential": 0.04520115119377834,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          4.24,
+          4.494400000000001,
+          4.764064000000001,
+          5.049907840000001,
+          5.352902310400002,
+          5.513489379712002,
+          5.678894061103362,
+          5.849260882936463,
+          6.024738709424557,
+          6.2054808707072935
+        ],
+        "present_values": [
+          3.925925925925926,
+          3.853223593964335,
+          3.781867601483514,
+          3.711833016270856,
+          3.6430953678213958,
+          3.474433545237072,
+          3.3135801403649845,
+          3.160173652385124,
+          3.0138693166265536,
+          2.874338329745694
+        ],
+        "terminal_value": 48.86375160567681,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.876881",
+          "stock_code": "1101",
+          "stock_name": null,
+          "current_price": 80.0,
+          "current_eps": 4.0,
+          "growth_rates": {
+            "1-5年": 0.06,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "1101",
+        "stock_name": "",
+        "current_price": 80.0,
+        "intrinsic_value": 83.61609209550227,
+        "upside_potential": 0.04520115119377834,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06,
+          0.03
+        ],
+        "terminal_value": 48.86375160567681,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877017",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "1216",
+      "inputs": {
+        "current_price": 87.5,
+        "current_eps": 4.35,
+        "growth_rates": [
+          0.06999999999999999,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "1216"
+      },
+      "legacy": {
+        "current_price": 87.5,
+        "intrinsic_value": 98.16896254129523,
+        "upside_potential": 0.12193100047194548,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          4.6545,
+          4.980315,
+          5.32893705,
+          5.701962643500001,
+          6.101100028545002,
+          6.345144029686802,
+          6.598949790874274,
+          6.862907782509245,
+          7.1374240938096145,
+          7.422921057561999
+        ],
+        "present_values": [
+          4.309722222222222,
+          4.269817386831275,
+          4.2302820406569115,
+          4.191112762502681,
+          4.152306162849879,
+          3.9985170457072905,
+          3.850423821792205,
+          3.7078155320961974,
+          3.570489030907449,
+          3.4382486964293952
+        ],
+        "terminal_value": 58.45022783929972,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877195",
+          "stock_code": "1216",
+          "stock_name": null,
+          "current_price": 87.5,
+          "current_eps": 4.35,
+          "growth_rates": {
+            "1-5年": 0.06999999999999999,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "1216",
+        "stock_name": "",
+        "current_price": 87.5,
+        "intrinsic_value": 98.16896254129523,
+        "upside_potential": 0.12193100047194548,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06999999999999999,
+          0.04
+        ],
+        "terminal_value": 58.45022783929972,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877221",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "1301",
+      "inputs": {
+        "current_price": 95.0,
+        "current_eps": 4.7,
+        "growth_rates": [
+          0.08,
+          0.05
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "1301"
+      },
+      "legacy": {
+        "current_price": 95.0,
+        "intrinsic_value": 114.51510449412245,
+        "upside_potential": 0.20542215256971005,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          5.0760000000000005,
+          5.482080000000001,
+          5.920646400000001,
+          6.394298112000001,
+          6.905841960960002,
+          7.2511340590080025,
+          7.613690761958403,
+          7.994375300056324,
+          8.39409406505914,
+          8.813798768312097
+        ],
+        "present_values": [
+          4.7,
+          4.7,
+          4.7,
+          4.7,
+          4.699999999999999,
+          4.569444444444445,
+          4.442515432098765,
+          4.319112225651577,
+          4.199136886050144,
+          4.082494194770973
+        ],
+        "terminal_value": 69.40240131110654,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877253",
+          "stock_code": "1301",
+          "stock_name": null,
+          "current_price": 95.0,
+          "current_eps": 4.7,
+          "growth_rates": {
+            "1-5年": 0.08,
+            "6-10年": 0.05
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "1301",
+        "stock_name": "",
+        "current_price": 95.0,
+        "intrinsic_value": 114.51510449412245,
+        "upside_potential": 0.20542215256971005,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.08,
+          0.05
+        ],
+        "terminal_value": 69.40240131110654,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877268",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "1326",
+      "inputs": {
+        "current_price": 102.5,
+        "current_eps": 5.05,
+        "growth_rates": [
+          0.09,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "1326"
+      },
+      "legacy": {
+        "current_price": 102.5,
+        "intrinsic_value": 119.87615759857958,
+        "upside_potential": 0.16952348876663006,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          5.5045,
+          5.999905000000001,
+          6.539896450000001,
+          7.128487130500002,
+          7.770050972245002,
+          8.003152501412352,
+          8.243247076454722,
+          8.490544488748364,
+          8.745260823410815,
+          9.007618648113139
+        ],
+        "present_values": [
+          5.096759259259259,
+          5.143951474622772,
+          5.191580654943353,
+          5.239650846192828,
+          5.288166131805724,
+          5.043343625703606,
+          4.809855494883994,
+          4.5871769997504765,
+          4.374807694206472,
+          4.172270300956172
+        ],
+        "terminal_value": 70.92859511625493,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877294",
+          "stock_code": "1326",
+          "stock_name": null,
+          "current_price": 102.5,
+          "current_eps": 5.05,
+          "growth_rates": {
+            "1-5年": 0.09,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "1326",
+        "stock_name": "",
+        "current_price": 102.5,
+        "intrinsic_value": 119.87615759857958,
+        "upside_potential": 0.16952348876663006,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.09,
+          0.03
+        ],
+        "terminal_value": 70.92859511625493,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877309",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "1402",
+      "inputs": {
+        "current_price": 110.0,
+        "current_eps": 5.4,
+        "growth_rates": [
+          0.06,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "1402"
+      },
+      "legacy": {
+        "current_price": 110.0,
+        "intrinsic_value": 116.75742201904833,
+        "upside_potential": 0.061431109264075766,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          5.724000000000001,
+          6.067440000000001,
+          6.431486400000002,
+          6.817375584000002,
+          7.2264181190400025,
+          7.515474843801603,
+          7.816093837553668,
+          8.128737591055815,
+          8.453887094698048,
+          8.79204257848597
+        ],
+        "present_values": [
+          5.300000000000001,
+          5.201851851851853,
+          5.105521262002744,
+          5.010974571965656,
+          4.918178746558884,
+          4.736023978167815,
+          4.560615682680117,
+          4.3917039907290025,
+          4.229048287368669,
+          4.072416869317977
+        ],
+        "terminal_value": 69.23108677840561,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877327",
+          "stock_code": "1402",
+          "stock_name": null,
+          "current_price": 110.0,
+          "current_eps": 5.4,
+          "growth_rates": {
+            "1-5年": 0.06,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "1402",
+        "stock_name": "",
+        "current_price": 110.0,
+        "intrinsic_value": 116.75742201904833,
+        "upside_potential": 0.061431109264075766,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06,
+          0.04
+        ],
+        "terminal_value": 69.23108677840561,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877338",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "1476",
+      "inputs": {
+        "current_price": 117.5,
+        "current_eps": 5.75,
+        "growth_rates": [
+          0.06999999999999999,
+          0.05
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "1476"
+      },
+      "legacy": {
+        "current_price": 117.5,
+        "intrinsic_value": 134.24901724311357,
+        "upside_potential": 0.14254482760096657,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          6.152500000000001,
+          6.5831750000000016,
+          7.043997250000002,
+          7.537077057500003,
+          8.064672451525004,
+          8.467906074101254,
+          8.891301377806318,
+          9.335866446696635,
+          9.802659769031466,
+          10.29279275748304
+        ],
+        "present_values": [
+          5.6967592592592595,
+          5.644011488340193,
+          5.591752122707414,
+          5.539976640089752,
+          5.488680560088921,
+          5.336217211197562,
+          5.187988955330963,
+          5.043878151016214,
+          4.903770424599097,
+          4.767554579471344
+        ],
+        "terminal_value": 81.04842785101286,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877354",
+          "stock_code": "1476",
+          "stock_name": null,
+          "current_price": 117.5,
+          "current_eps": 5.75,
+          "growth_rates": {
+            "1-5年": 0.06999999999999999,
+            "6-10年": 0.05
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "1476",
+        "stock_name": "",
+        "current_price": 117.5,
+        "intrinsic_value": 134.24901724311357,
+        "upside_potential": 0.14254482760096657,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06999999999999999,
+          0.05
+        ],
+        "terminal_value": 81.04842785101286,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877367",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2002",
+      "inputs": {
+        "current_price": 125.0,
+        "current_eps": 6.1,
+        "growth_rates": [
+          0.08,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2002"
+      },
+      "legacy": {
+        "current_price": 125.0,
+        "intrinsic_value": 138.83394527226932,
+        "upside_potential": 0.11067156217815455,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          6.588,
+          7.1150400000000005,
+          7.684243200000001,
+          8.298982656000002,
+          8.962901268480001,
+          9.231788306534401,
+          9.508741955730434,
+          9.794004214402348,
+          10.087824340834418,
+          10.390459071059452
+        ],
+        "present_values": [
+          6.1,
+          6.1,
+          6.1,
+          6.1,
+          6.099999999999999,
+          5.817592592592591,
+          5.548259602194785,
+          5.2913957317228055,
+          5.046423707106008,
+          4.812792979925175
+        ],
+        "terminal_value": 81.81748065872796,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877383",
+          "stock_code": "2002",
+          "stock_name": null,
+          "current_price": 125.0,
+          "current_eps": 6.1,
+          "growth_rates": {
+            "1-5年": 0.08,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2002",
+        "stock_name": "",
+        "current_price": 125.0,
+        "intrinsic_value": 138.83394527226932,
+        "upside_potential": 0.11067156217815455,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.08,
+          0.03
+        ],
+        "terminal_value": 81.81748065872796,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877392",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2105",
+      "inputs": {
+        "current_price": 132.5,
+        "current_eps": 6.449999999999999,
+        "growth_rates": [
+          0.09,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2105"
+      },
+      "legacy": {
+        "current_price": 132.5,
+        "intrinsic_value": 158.4316927448403,
+        "upside_potential": 0.1957108886403041,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          7.0305,
+          7.663245000000001,
+          8.352937050000001,
+          9.104701384500002,
+          9.924124509105003,
+          10.321089489469204,
+          10.733933069047971,
+          11.163290391809891,
+          11.609822007482288,
+          12.07421488778158
+        ],
+        "present_values": [
+          6.509722222222222,
+          6.569997427983539,
+          6.630830737501905,
+          6.692227318404701,
+          6.7541923861677065,
+          6.50403711260594,
+          6.263146849176089,
+          6.031178447354753,
+          5.807801467823096,
+          5.592697709755573
+        ],
+        "terminal_value": 95.07586106584475,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877406",
+          "stock_code": "2105",
+          "stock_name": null,
+          "current_price": 132.5,
+          "current_eps": 6.449999999999999,
+          "growth_rates": {
+            "1-5年": 0.09,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2105",
+        "stock_name": "",
+        "current_price": 132.5,
+        "intrinsic_value": 158.4316927448403,
+        "upside_potential": 0.1957108886403041,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.09,
+          0.04
+        ],
+        "terminal_value": 95.07586106584475,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877418",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2207",
+      "inputs": {
+        "current_price": 140.0,
+        "current_eps": 6.8,
+        "growth_rates": [
+          0.06,
+          0.05
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2207"
+      },
+      "legacy": {
+        "current_price": 140.0,
+        "intrinsic_value": 152.0891072514923,
+        "upside_potential": 0.08635076608208782,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          7.208,
+          7.64048,
+          8.0989088,
+          8.584843328,
+          9.09993392768,
+          9.554930624064001,
+          10.032677155267201,
+          10.534311013030562,
+          11.061026563682091,
+          11.614077891866197
+        ],
+        "present_values": [
+          6.674074074074074,
+          6.550480109739368,
+          6.429174922521972,
+          6.310116127660454,
+          6.19326212529637,
+          6.021227066260361,
+          5.853970758864239,
+          5.6913604600069,
+          5.5332671138955964,
+          5.379565249620719
+        ],
+        "terminal_value": 91.45260924355223,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877433",
+          "stock_code": "2207",
+          "stock_name": null,
+          "current_price": 140.0,
+          "current_eps": 6.8,
+          "growth_rates": {
+            "1-5年": 0.06,
+            "6-10年": 0.05
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2207",
+        "stock_name": "",
+        "current_price": 140.0,
+        "intrinsic_value": 152.0891072514923,
+        "upside_potential": 0.08635076608208782,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06,
+          0.05
+        ],
+        "terminal_value": 91.45260924355223,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877442",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2303",
+      "inputs": {
+        "current_price": 147.5,
+        "current_eps": 7.15,
+        "growth_rates": [
+          0.06999999999999999,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2303"
+      },
+      "legacy": {
+        "current_price": 147.5,
+        "intrinsic_value": 155.97979665236676,
+        "upside_potential": 0.05749014679570683,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          7.650500000000001,
+          8.186035000000002,
+          8.759057450000002,
+          9.372191471500003,
+          10.028244874505003,
+          10.329092220740153,
+          10.638964987362357,
+          10.958133936983227,
+          11.286877955092724,
+          11.625484293745506
+        ],
+        "present_values": [
+          7.083796296296296,
+          7.01820558984911,
+          6.953222204757914,
+          6.8888405176768215,
+          6.825054957327961,
+          6.509080190785,
+          6.207733885656063,
+          5.920338798357172,
+          5.646249039173968,
+          5.384848620693692
+        ],
+        "terminal_value": 91.54242655179277,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877456",
+          "stock_code": "2303",
+          "stock_name": null,
+          "current_price": 147.5,
+          "current_eps": 7.15,
+          "growth_rates": {
+            "1-5年": 0.06999999999999999,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2303",
+        "stock_name": "",
+        "current_price": 147.5,
+        "intrinsic_value": 155.97979665236676,
+        "upside_potential": 0.05749014679570683,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06999999999999999,
+          0.03
+        ],
+        "terminal_value": 91.54242655179277,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877470",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2317",
+      "inputs": {
+        "current_price": 155.0,
+        "current_eps": 7.5,
+        "growth_rates": [
+          0.08,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2317"
+      },
+      "legacy": {
+        "current_price": 155.0,
+        "intrinsic_value": 176.60773726528438,
+        "upside_potential": 0.13940475655022183,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          8.100000000000001,
+          8.748000000000003,
+          9.447840000000003,
+          10.203667200000003,
+          11.019960576000004,
+          11.460758999040005,
+          11.919189359001605,
+          12.395956933361669,
+          12.891795210696136,
+          13.407467019123983
+        ],
+        "present_values": [
+          7.500000000000001,
+          7.500000000000002,
+          7.500000000000001,
+          7.500000000000001,
+          7.5,
+          7.222222222222222,
+          6.954732510288065,
+          6.697149824721841,
+          6.449107238621031,
+          6.2102514149684005
+        ],
+        "terminal_value": 105.57427405446282,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877485",
+          "stock_code": "2317",
+          "stock_name": null,
+          "current_price": 155.0,
+          "current_eps": 7.5,
+          "growth_rates": {
+            "1-5年": 0.08,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2317",
+        "stock_name": "",
+        "current_price": 155.0,
+        "intrinsic_value": 176.60773726528438,
+        "upside_potential": 0.13940475655022183,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.08,
+          0.04
+        ],
+        "terminal_value": 105.57427405446282,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877494",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2330",
+      "inputs": {
+        "current_price": 162.5,
+        "current_eps": 7.85,
+        "growth_rates": [
+          0.09,
+          0.05
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2330"
+      },
+      "legacy": {
+        "current_price": 162.5,
+        "intrinsic_value": 199.53767405866023,
+        "upside_potential": 0.22792414805329372,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          8.5565,
+          9.326585,
+          10.16597765,
+          11.0809156385,
+          12.078198045965001,
+          12.682107948263251,
+          13.316213345676415,
+          13.982024012960236,
+          14.681125213608249,
+          15.415181474288662
+        ],
+        "present_values": [
+          7.922685185185184,
+          7.996043381344307,
+          8.070080820060458,
+          8.144803790616573,
+          8.220218640529687,
+          7.991879233848308,
+          7.769882588463632,
+          7.554052516561865,
+          7.344217724435146,
+          7.140211676534169
+        ],
+        "terminal_value": 121.38359850108091,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877509",
+          "stock_code": "2330",
+          "stock_name": null,
+          "current_price": 162.5,
+          "current_eps": 7.85,
+          "growth_rates": {
+            "1-5年": 0.09,
+            "6-10年": 0.05
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2330",
+        "stock_name": "",
+        "current_price": 162.5,
+        "intrinsic_value": 199.53767405866023,
+        "upside_potential": 0.22792414805329372,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.09,
+          0.05
+        ],
+        "terminal_value": 121.38359850108091,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877519",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2345",
+      "inputs": {
+        "current_price": 170.0,
+        "current_eps": 8.2,
+        "growth_rates": [
+          0.06,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2345"
+      },
+      "legacy": {
+        "current_price": 170.0,
+        "intrinsic_value": 171.41298879577963,
+        "upside_potential": 0.00831169879870368,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          8.692,
+          9.21352,
+          9.766331200000002,
+          10.352311072000003,
+          10.973449736320003,
+          11.302653228409604,
+          11.641732825261892,
+          11.990984810019748,
+          12.35071435432034,
+          12.72123578494995
+        ],
+        "present_values": [
+          8.048148148148147,
+          7.899108367626886,
+          7.752828583041203,
+          7.609257683355255,
+          7.46834550403386,
+          7.122588767735997,
+          6.792839287748219,
+          6.478355987389504,
+          6.178432099084434,
+          5.892393575978673
+        ],
+        "terminal_value": 100.17069079163744,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877540",
+          "stock_code": "2345",
+          "stock_name": null,
+          "current_price": 170.0,
+          "current_eps": 8.2,
+          "growth_rates": {
+            "1-5年": 0.06,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2345",
+        "stock_name": "",
+        "current_price": 170.0,
+        "intrinsic_value": 171.41298879577963,
+        "upside_potential": 0.00831169879870368,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06,
+          0.03
+        ],
+        "terminal_value": 100.17069079163744,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877549",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2357",
+      "inputs": {
+        "current_price": 177.5,
+        "current_eps": 8.55,
+        "growth_rates": [
+          0.06999999999999999,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2357"
+      },
+      "legacy": {
+        "current_price": 177.5,
+        "intrinsic_value": 192.95278844323548,
+        "upside_potential": 0.08705796306048155,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          9.148500000000002,
+          9.788895000000004,
+          10.474117650000004,
+          11.207305885500004,
+          11.991817297485005,
+          12.471489989384406,
+          12.970349588959783,
+          13.489163572518175,
+          14.028730115418902,
+          14.589879320035658
+        ],
+        "present_values": [
+          8.470833333333335,
+          8.392399691358028,
+          8.314692286808416,
+          8.237704395263892,
+          8.161429354567003,
+          7.859154193286744,
+          7.568074408350197,
+          7.28777535618908,
+          7.017857750404299,
+          6.7579370929819165
+        ],
+        "terminal_value": 114.88493058069258,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877565",
+          "stock_code": "2357",
+          "stock_name": null,
+          "current_price": 177.5,
+          "current_eps": 8.55,
+          "growth_rates": {
+            "1-5年": 0.06999999999999999,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2357",
+        "stock_name": "",
+        "current_price": 177.5,
+        "intrinsic_value": 192.95278844323548,
+        "upside_potential": 0.08705796306048155,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06999999999999999,
+          0.04
+        ],
+        "terminal_value": 114.88493058069258,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877575",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2379",
+      "inputs": {
+        "current_price": 185.0,
+        "current_eps": 8.899999999999999,
+        "growth_rates": [
+          0.08,
+          0.05
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2379"
+      },
+      "legacy": {
+        "current_price": 185.0,
+        "intrinsic_value": 216.8477510633382,
+        "upside_potential": 0.17215000574777403,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          9.611999999999998,
+          10.380959999999998,
+          11.2114368,
+          12.108351744,
+          13.07701988352,
+          13.730870877696,
+          14.417414421580801,
+          15.138285142659843,
+          15.895199399792835,
+          16.68995936978248
+        ],
+        "present_values": [
+          8.899999999999999,
+          8.899999999999997,
+          8.899999999999999,
+          8.899999999999999,
+          8.899999999999997,
+          8.652777777777775,
+          8.412422839506169,
+          8.178744427297666,
+          7.951557082094952,
+          7.730680496481203
+        ],
+        "terminal_value": 131.42156844018044,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877589",
+          "stock_code": "2379",
+          "stock_name": null,
+          "current_price": 185.0,
+          "current_eps": 8.899999999999999,
+          "growth_rates": {
+            "1-5年": 0.08,
+            "6-10年": 0.05
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2379",
+        "stock_name": "",
+        "current_price": 185.0,
+        "intrinsic_value": 216.8477510633382,
+        "upside_potential": 0.17215000574777403,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.08,
+          0.05
+        ],
+        "terminal_value": 131.42156844018044,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877598",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2382",
+      "inputs": {
+        "current_price": 192.5,
+        "current_eps": 9.25,
+        "growth_rates": [
+          0.09,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2382"
+      },
+      "legacy": {
+        "current_price": 192.5,
+        "intrinsic_value": 219.5751401558142,
+        "upside_potential": 0.1406500787315024,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          10.082500000000001,
+          10.989925000000003,
+          11.979018250000005,
+          13.057129892500006,
+          14.232271582825007,
+          14.659239730309757,
+          15.09901692221905,
+          15.551987429885623,
+          16.018547052782193,
+          16.49910346436566
+        ],
+        "present_values": [
+          9.335648148148149,
+          9.422089334705078,
+          9.509330902619014,
+          9.597380262828448,
+          9.686244894891674,
+          9.237807631239281,
+          8.81013135201524,
+          8.402254900533054,
+          8.013261618100968,
+          7.6422772839296265
+        ],
+        "terminal_value": 129.91871382680367,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877612",
+          "stock_code": "2382",
+          "stock_name": null,
+          "current_price": 192.5,
+          "current_eps": 9.25,
+          "growth_rates": {
+            "1-5年": 0.09,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2382",
+        "stock_name": "",
+        "current_price": 192.5,
+        "intrinsic_value": 219.5751401558142,
+        "upside_potential": 0.1406500787315024,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.09,
+          0.03
+        ],
+        "terminal_value": 129.91871382680367,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877621",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2454",
+      "inputs": {
+        "current_price": 200.0,
+        "current_eps": 9.6,
+        "growth_rates": [
+          0.06,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2454"
+      },
+      "legacy": {
+        "current_price": 200.0,
+        "intrinsic_value": 207.5687502560859,
+        "upside_potential": 0.03784375128042953,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          10.176,
+          10.786560000000001,
+          11.433753600000003,
+          12.119778816000004,
+          12.846965544960005,
+          13.360844166758406,
+          13.895277933428742,
+          14.451089050765892,
+          15.029132612796529,
+          15.63029791730839
+        ],
+        "present_values": [
+          9.422222222222222,
+          9.247736625514404,
+          9.076482243560434,
+          8.908399239050055,
+          8.743428882771349,
+          8.419598183409448,
+          8.107761213653543,
+          7.807473761296004,
+          7.518308066433189,
+          7.239852212120847
+        ],
+        "terminal_value": 123.0774876060544,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877636",
+          "stock_code": "2454",
+          "stock_name": null,
+          "current_price": 200.0,
+          "current_eps": 9.6,
+          "growth_rates": {
+            "1-5年": 0.06,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2454",
+        "stock_name": "",
+        "current_price": 200.0,
+        "intrinsic_value": 207.5687502560859,
+        "upside_potential": 0.03784375128042953,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06,
+          0.04
+        ],
+        "terminal_value": 123.0774876060544,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877649",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2603",
+      "inputs": {
+        "current_price": 207.5,
+        "current_eps": 9.95,
+        "growth_rates": [
+          0.06999999999999999,
+          0.05
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2603"
+      },
+      "legacy": {
+        "current_price": 207.5,
+        "intrinsic_value": 232.30916896851812,
+        "upside_potential": 0.11956226008924396,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          10.6465,
+          11.391755,
+          12.18917785,
+          13.042420299500002,
+          13.955389720465002,
+          14.653159206488253,
+          15.385817166812666,
+          16.1551080251533,
+          16.962863426410966,
+          17.811006597731513
+        ],
+        "present_values": [
+          9.85787037037037,
+          9.76659379286694,
+          9.676162368858913,
+          9.58656827285096,
+          9.497803751806043,
+          9.233975869811431,
+          8.977476540094445,
+          8.72810219175849,
+          8.485654908654086,
+          8.249942272302583
+        ],
+        "terminal_value": 140.24901862914388,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877663",
+          "stock_code": "2603",
+          "stock_name": null,
+          "current_price": 207.5,
+          "current_eps": 9.95,
+          "growth_rates": {
+            "1-5年": 0.06999999999999999,
+            "6-10年": 0.05
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2603",
+        "stock_name": "",
+        "current_price": 207.5,
+        "intrinsic_value": 232.30916896851812,
+        "upside_potential": 0.11956226008924396,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.06999999999999999,
+          0.05
+        ],
+        "terminal_value": 140.24901862914388,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877673",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "2881",
+      "inputs": {
+        "current_price": 215.0,
+        "current_eps": 10.3,
+        "growth_rates": [
+          0.08,
+          0.03
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "2881"
+      },
+      "legacy": {
+        "current_price": 215.0,
+        "intrinsic_value": 234.4245305417007,
+        "upside_potential": 0.09034665368232886,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          11.124000000000002,
+          12.013920000000004,
+          12.975033600000005,
+          14.013036288000006,
+          15.134079191040007,
+          15.588101566771208,
+          16.055744613774344,
+          16.537416952187574,
+          17.0335394607532,
+          17.5445456445758
+        ],
+        "present_values": [
+          10.3,
+          10.300000000000002,
+          10.300000000000002,
+          10.300000000000002,
+          10.3,
+          9.82314814814815,
+          9.368372770919066,
+          8.934651809302443,
+          8.521010521834736,
+          8.126519293972017
+        ],
+        "terminal_value": 138.1508279975243,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877700",
+          "stock_code": "2881",
+          "stock_name": null,
+          "current_price": 215.0,
+          "current_eps": 10.3,
+          "growth_rates": {
+            "1-5年": 0.08,
+            "6-10年": 0.03
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "2881",
+        "stock_name": "",
+        "current_price": 215.0,
+        "intrinsic_value": 234.4245305417007,
+        "upside_potential": 0.09034665368232886,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.08,
+          0.03
+        ],
+        "terminal_value": 138.1508279975243,
+        "recommendation": "觀望 - 價格接近內在價值",
+        "calculated_at": "2026-08-20T00:02:40.877715",
+        "data_source": ""
+      }
+    },
+    {
+      "stock_code": "3008",
+      "inputs": {
+        "current_price": 222.5,
+        "current_eps": 10.649999999999999,
+        "growth_rates": [
+          0.09,
+          0.04
+        ],
+        "discount_rate": 0.08,
+        "years": 10,
+        "stock_code": "3008"
+      },
+      "legacy": {
+        "current_price": 222.5,
+        "intrinsic_value": 261.5965159275269,
+        "upside_potential": 0.17571467832596369,
+        "discount_rate": 0.08,
+        "cash_flows": [
+          11.6085,
+          12.653265000000001,
+          13.792058850000002,
+          15.033344146500003,
+          16.386345119685004,
+          17.041798924472403,
+          17.7234708814513,
+          18.43240971670935,
+          19.169706105377728,
+          19.936494349592838
+        ],
+        "present_values": [
+          10.74861111111111,
+          10.848135288065844,
+          10.948580985177564,
+          11.04995673504032,
+          11.152271149253654,
+          10.739224069651666,
+          10.341475030034937,
+          9.958457436329939,
+          9.589625679428831,
+          9.234454357968504
+        ],
+        "terminal_value": 156.98572408546454,
+        "recommendation": "考慮 - 視市場情況決定",
+        "input_parameters": {
+          "timestamp": "2026-08-20T00:02:40.877731",
+          "stock_code": "3008",
+          "stock_name": null,
+          "current_price": 222.5,
+          "current_eps": 10.649999999999999,
+          "growth_rates": {
+            "1-5年": 0.09,
+            "6-10年": 0.04
+          },
+          "discount_rate": 0.08,
+          "years": 10,
+          "data_source": "未指定",
+          "weighting_method": "unknown"
+        }
+      },
+      "layered": {
+        "stock_code": "3008",
+        "stock_name": "",
+        "current_price": 222.5,
+        "intrinsic_value": 261.5965159275269,
+        "upside_potential": 0.17571467832596369,
+        "discount_rate": 0.08,
+        "growth_rates": [
+          0.09,
+          0.04
+        ],
+        "terminal_value": 156.98572408546454,
+        "recommendation": "考慮 - 視市場情況決定",
+        "calculated_at": "2026-08-20T00:02:40.877741",
+        "data_source": ""
+      }
+    }
+  ]
+}
