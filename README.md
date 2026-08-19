@@ -214,6 +214,54 @@ streamlit run main.py
 3. 檔案名稱自動包含投資建議（例：`2330_台積電_強烈推薦_20251028.pdf`）
 4. 方便依投資建議分類管理報告檔案
 
+## 📱 遠端存取與手機測試
+
+本專案內建 Cloudflare Tunnel，可讓您在不調整防火牆的情況下，快速產生一個臨時網址供手機或其他遠端設備存取。
+
+### 使用步驟：
+
+1. **啟動應用程式**：
+   確保您已經先執行了 `.\run-en.ps1` 啟動工具。
+
+2. **開啟遠端隧道**：
+   在專案根目錄下，執行以下 PowerShell 腳本：
+   ```powershell
+   .\run-mobile-tunnel.ps1
+   ```
+
+3. **取得網址**：
+   等待畫面出現 `https://xxx.trycloudflare.com` 的連結。您可以使用手機掃描 QR Code 或手動輸入該網址。
+
+4. **停止隧道**：
+   在 PowerShell 視窗中按下 `Ctrl + C` 即可關閉遠端存取。
+
+> ⚠️ **注意**：這是一個臨時網址，每次關閉後重新開啟都會變動。
+
+## 📘 API 文件（Sphinx）
+
+本專案已提供可自動生成的 API 文件架構，涵蓋核心模組、資料層、快取、資料來源與風險模組。
+
+### 本機建置
+
+```bash
+pip install -r requirements.txt
+sphinx-build -b html docs/source docs/_build/html
+```
+
+完成後可開啟：`docs/_build/html/index.html`
+
+### Windows 快速建置
+
+```powershell
+cd docs
+./make.bat html
+```
+
+### 自動發布
+
+- 已新增 GitHub Actions workflow：`.github/workflows/docs.yml`
+- 推送到 `main` 或 `master` 後，會自動建置並部署到 GitHub Pages
+
 ## 📁 專案結構
 
 ```
@@ -229,7 +277,9 @@ stock-valuation-tool/
 │   └── config.yaml       # 設定文件
 ├── requirements.txt      # Python 依賴
 ├── .env                  # 環境變數
-└── README.md            # 專案說明
+├── README.md            # 專案說明
+├── run-mobile-tunnel.ps1 # 遠端隧道啟動腳本
+└── cloudflared.exe       # Cloudflare Tunnel 執行檔
 ```
 
 ## 🔧 開發說明

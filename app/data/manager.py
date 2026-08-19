@@ -30,60 +30,13 @@ class DataManagerV2:
     - 統一的資料介面
     """
     
-    # 台灣前 50 大市值股票預設 EPS 值（2024 年資料）
-    # 當無法從資料源獲取時使用，避免返回 0.0
-    DEFAULT_EPS = {
-        '2330': 32.0,   # 台積電
-        '2317': 15.5,   # 鴻海
-        '2454': 25.2,   # 聯發科
-        '2412': 5.8,    # 中華電
-        '2882': 6.2,    # 國泰金
-        '2881': 3.8,    # 富邦金
-        '2886': 2.5,    # 兆豐金
-        '2892': 2.1,    # 第一金
-        '2891': 2.8,    # 中信金
-        '2883': 2.3,    # 開發金
-        '1301': 8.5,    # 台塑
-        '1303': 6.2,    # 南亞
-        '1326': 7.8,    # 台化
-        '2308': 12.5,   # 台達電
-        '2002': 2.1,    # 中鋼
-        '2603': 4.2,    # 長榮
-        '2609': 8.5,    # 陽明
-        '2615': 3.5,    # 萬海
-        '3008': 5.2,    # 大立光
-        '2357': 18.5,   # 華碩
-        '2382': 6.8,    # 廣達
-        '2395': 2.5,    # 研華
-        '3711': 3.2,    # 日月光投控
-        '6505': 15.8,   # 台塑化
-        '2345': 4.5,    # 智邦
-        '2884': 1.8,    # 玉山金
-        '5880': 5.5,    # 合庫金
-        '2890': 2.2,    # 永豐金
-        '2912': 1.5,    # 統一超
-        '2887': 1.9,    # 台新金
-        '1216': 9.2,    # 統一
-        '2379': 12.5,   # 瑞昱
-        '2301': 3.8,    # 光寶科
-        '3045': 12.8,   # 台灣大
-        '2327': 8.5,    # 國巨
-        '2303': 4.2,    # 聯電
-        '6669': 8.8,    # 緯穎
-        '3034': 7.5,    # 聯詠
-        '2408': 2.5,    # 南亞科
-        '2409': 3.8,    # 友達
-        '2324': 5.2,    # 仁寶
-        '2049': 2.8,    # 上銀
-        '2207': 3.5,    # 和泰車
-        '2885': 2.1,    # 元大金
-        '2376': 6.5,    # 技嘉
-        '3231': 4.8,    # 緯創
-        '2474': 8.2,    # 可成
-        '2356': 5.5,    # 英業達
-        '2377': 4.2,    # 微星
-        '2201': 3.8,    # 裕隆
-    }
+    # 台灣前 50 大市值股票預設 EPS 值（從外部 JSON 載入）
+    import json
+    from pathlib import Path
+    try:
+        DEFAULT_EPS = json.loads((Path(__file__).parent / "default_eps.json").read_text(encoding="utf-8"))
+    except Exception:
+        DEFAULT_EPS = {}
     
     def __init__(
         self,
@@ -108,26 +61,26 @@ class DataManagerV2:
         yfinance_source = YFinanceSource()
         if yfinance_source.is_available:
             self.sources.append(yfinance_source)
-            print("✓ YFinance 資料源已就緒")
+            print("[OK] YFinance 資料源已就緒")
         
         # 2. FinMind (備援來源 - 股價、財報)
         finmind_source = FinMindSource(api_token=finmind_token)
         if finmind_source.is_available:
             self.sources.append(finmind_source)
-            print("✓ FinMind 資料源已就緒")
+            print("[OK] FinMind 資料源已就緒")
         
         # 3. MOPS (輔助來源 - 流通股數、公司資訊)
         mops_source = MOPSSource()
         if mops_source.is_available:
             self.sources.append(mops_source)
-            print("✓ MOPS 資料源已就緒（簡化版 - 流通股數、公司資訊）")
+            print("[OK] MOPS 資料源已就緒（簡化版 - 流通股數、公司資訊）")
         
         if not self.sources:
-            print("⚠️  警告：沒有可用的資料來源！")
+            print("[WARN]  警告：沒有可用的資料來源！")
         
         # 初始化快取後端
         self.cache: CacheBackend = SQLiteCache(db_path=db_path)
-        print(f"✓ SQLite 快取已就緒: {db_path}")
+        print(f"[OK] SQLite 快取已就緒: {db_path}")
         
         # 記憶體快取（簡單的 LRU 實現）
         self.enable_memory_cache = enable_memory_cache
@@ -143,12 +96,12 @@ class DataManagerV2:
         
         # 資料驗證器
         self.validator = DataValidator()
-        print("✓ 資料驗證器已就緒")
+        print("[OK] 資料驗證器已就緒")
         
         # 資料警告記錄
         self.data_warnings: Dict[str, List[str]] = defaultdict(list)
         
-        print("✓ DataManagerV2 初始化完成\n")
+        print("[OK] DataManagerV2 初始化完成\n")
     
     # ==================== 公開 API ====================
     
@@ -175,13 +128,13 @@ class DataManagerV2:
         if self.enable_memory_cache:
             cached_data = self._get_from_memory_cache(cache_key)
             if cached_data is not None:
-                print(f"✓ 從記憶體快取獲取價格數據: {stock_code}")
+                print(f"[OK] 從記憶體快取獲取價格數據: {stock_code}")
                 return cached_data
         
         # 2. 檢查 SQLite 快取
         cached_data = self.cache.get_stock_price(stock_code, start_date, end_date)
         if cached_data is not None and len(cached_data) > 0:
-            print(f"✓ 從 SQLite 快取獲取價格數據: {stock_code}")
+            print(f"[OK] 從 SQLite 快取獲取價格數據: {stock_code}")
             self._save_to_memory_cache(cache_key, cached_data)
             return cached_data
         
@@ -207,13 +160,13 @@ class DataManagerV2:
             # 記錄警告
             if validation_res['warnings']:
                 self.data_warnings[stock_code].extend(validation_res['warnings'])
-                print(f"⚠️  價格數據警告: {', '.join(validation_res['warnings'])}")
+                print(f"[WARN]  價格數據警告: {', '.join(validation_res['warnings'])}")
             
-            print(f"✓ 價格數據品質評分: {quality:.1f}/100")
+            print(f"[OK] 價格數據品質評分: {quality:.1f}/100")
             
             return data
         
-        print(f"✗ 無法獲取價格數據: {stock_code}")
+        print(f"[FAIL] 無法獲取價格數據: {stock_code}")
         return None
     
     def get_financial_data(
@@ -237,13 +190,13 @@ class DataManagerV2:
         if self.enable_memory_cache:
             cached_data = self._get_from_memory_cache(cache_key)
             if cached_data is not None:
-                print(f"✓ 從記憶體快取獲取財務數據: {stock_code}")
+                print(f"[OK] 從記憶體快取獲取財務數據: {stock_code}")
                 return cached_data
         
         # 2. 檢查 SQLite 快取
         cached_data = self.cache.get_financial_data(stock_code)
         if cached_data is not None and len(cached_data) > 0:
-            print(f"✓ 從 SQLite 快取獲取財務數據: {stock_code}")
+            print(f"[OK] 從 SQLite 快取獲取財務數據: {stock_code}")
             self._save_to_memory_cache(cache_key, cached_data)
             return cached_data
         
@@ -268,13 +221,13 @@ class DataManagerV2:
             # 記錄警告
             if validation_res['warnings']:
                 self.data_warnings[stock_code].extend(validation_res['warnings'])
-                print(f"⚠️  財務數據警告: {', '.join(validation_res['warnings'])}")
+                print(f"[WARN]  財務數據警告: {', '.join(validation_res['warnings'])}")
             
-            print(f"✓ 財務數據品質評分: {quality:.1f}/100")
+            print(f"[OK] 財務數據品質評分: {quality:.1f}/100")
             
             return data
         
-        print(f"✗ 無法獲取財務數據: {stock_code}")
+        print(f"[FAIL] 無法獲取財務數據: {stock_code}")
         return None
     
     def get_latest_eps(self, stock_code: str) -> float:
@@ -293,7 +246,7 @@ class DataManagerV2:
         if self.enable_memory_cache:
             cached_eps = self._get_from_memory_cache(cache_key)
             if cached_eps is not None:
-                print(f"✓ 從記憶體快取獲取 EPS: {stock_code}")
+                print(f"[OK] 從記憶體快取獲取 EPS: {stock_code}")
                 return cached_eps
         
         # 2. 從資料來源獲取（智能備援）
@@ -318,11 +271,11 @@ class DataManagerV2:
         # 4. 使用預設 EPS 值（如果有）
         if stock_code in self.DEFAULT_EPS:
             default_eps = self.DEFAULT_EPS[stock_code]
-            print(f"⚠ 使用預設 EPS 值: {stock_code} = {default_eps}")
+            print(f"[WARN] 使用預設 EPS 值: {stock_code} = {default_eps}")
             self._save_to_memory_cache(cache_key, default_eps)
             return default_eps
         
-        print(f"✗ 無法獲取 EPS: {stock_code}")
+        print(f"[FAIL] 無法獲取 EPS: {stock_code}")
         return 0.0
     
     def get_stock_info(self, stock_code: str) -> Optional[Dict[str, Any]]:
@@ -362,6 +315,54 @@ class DataManagerV2:
         
         return None
     
+    def get_quality_indicators(self, stock_code: str) -> Dict[str, float]:
+        """
+        獲取盈餘品質與營運效率指標
+        包含 OCF/NI 比例、存貨週轉率等
+        """
+        df = self.get_financial_data(stock_code, years=2)
+        indicators = {
+            "earnings_quality": None, # OCF / NI
+            "gross_margin": None,
+            "operating_margin": None,
+            "net_margin": None
+        }
+        
+        if df is not None and not df.empty:
+            try:
+                latest = df.iloc[0]
+                
+                # Earnings Quality = Operating Cash Flow / Net Income
+                if 'operating_cash_flow' in latest and 'net_income' in latest:
+                    ocf = latest['operating_cash_flow']
+                    ni = latest['net_income']
+                    if ni and ni != 0 and ocf and pd.notna(ocf) and pd.notna(ni):
+                        indicators["earnings_quality"] = ocf / ni
+                
+                # Margins
+                if 'gross_profit' in latest and 'revenue' in latest:
+                    gp = latest['gross_profit']
+                    rev = latest['revenue']
+                    if rev and rev != 0 and pd.notna(gp) and pd.notna(rev):
+                        indicators["gross_margin"] = gp / rev
+                        
+                if 'operating_income' in latest and 'revenue' in latest:
+                    op = latest['operating_income']
+                    rev = latest['revenue']
+                    if rev and rev != 0 and pd.notna(op) and pd.notna(rev):
+                        indicators["operating_margin"] = op / rev
+                        
+                if 'net_income' in latest and 'revenue' in latest:
+                    ni = latest['net_income']
+                    rev = latest['revenue']
+                    if rev and rev != 0 and pd.notna(ni) and pd.notna(rev):
+                        indicators["net_margin"] = ni / rev
+                        
+            except Exception as e:
+                print(f"[WARN] 計算品質指標失敗: {e}")
+                
+        return indicators
+    
     def get_shares_outstanding(
         self, 
         stock_code: str, 
@@ -388,7 +389,7 @@ class DataManagerV2:
         if self.enable_memory_cache:
             cached_shares = self._get_from_memory_cache(cache_key)
             if cached_shares is not None:
-                print(f"✓ 從記憶體快取獲取流通股數: {stock_code}")
+                print(f"[OK] 從記憶體快取獲取流通股數: {stock_code}")
                 return cached_shares
         
         # 2. 優先使用 MOPS（最準確的流通股數來源）
@@ -396,16 +397,16 @@ class DataManagerV2:
             source_class_name = getattr(source, '__class__', type(source)).__name__
             if source_class_name == 'MOPSSource' or 'MOPSSource' in str(type(source)) or 'MOPSSource' in str(source):
                 try:
-                    print(f"  → 優先使用 MOPS 獲取流通股數...")
+                    print(f"  [INFO] 優先使用 MOPS 獲取流通股數...")
                     shares = source.get_shares_outstanding(stock_code, report_date)
                     if shares is not None and shares > 0:
                         self._save_to_memory_cache(cache_key, shares)
                         return shares
                 except Exception as e:
-                    print(f"  ⚠️ MOPS 獲取流通股數失敗: {str(e)}")
+                    print(f"  [WARN] MOPS 獲取流通股數失敗: {str(e)}")
         
         # 3. 備援：嘗試從其他資料來源獲取
-        print(f"  → 使用備援來源獲取流通股數...")
+        print(f"  [INFO] 使用備援來源獲取流通股數...")
         shares = self._get_with_fallback(
             'get_shares_outstanding', 
             stock_code=stock_code,
@@ -416,7 +417,7 @@ class DataManagerV2:
             self._save_to_memory_cache(cache_key, shares)
             return shares
         
-        print(f"  ✗ 無法獲取流通股數: {stock_code}")
+        print(f"  [FAIL] 無法獲取流通股數: {stock_code}")
         return None
     
     def get_latest_price(self, stock_code: str) -> float:
@@ -461,7 +462,7 @@ class DataManagerV2:
         
         # 2. 檢查 SQLite 快取
         cached_stocks = self.cache.get_all_stocks()
-        if cached_stocks is not None and len(cached_stocks) > 0:
+        if cached_stocks is not None and len(cached_stocks) > 1000:  # 確保是完整清單而非個別查詢留下的記錄
             self._save_to_memory_cache(cache_key, cached_stocks)
             return cached_stocks
         
@@ -725,13 +726,13 @@ class DataManagerV2:
     def clear_memory_cache(self):
         """清除記憶體快取"""
         self.memory_cache.clear()
-        print("✓ 記憶體快取已清除")
+        print("[OK] 記憶體快取已清除")
     
     def clear_all_cache(self):
         """清除所有快取"""
         self.memory_cache.clear()
         self.cache.clear_cache()
-        print("✓ 所有快取已清除")
+        print("[OK] 所有快取已清除")
     
     # ==================== 時間加權計算方法 ====================
     
@@ -905,7 +906,7 @@ class DataManagerV2:
             try:
                 # 檢查來源是否就緒
                 if not source.is_ready():
-                    print(f"  ⊗ {source_name} 未就緒，跳過")
+                    print(f"  [FAILED] {source_name} 未就緒，跳過")
                     continue
                 
                 # 檢查來源是否有此方法
@@ -914,33 +915,33 @@ class DataManagerV2:
                 
                 # 調用方法
                 method = getattr(source, method_name)
-                print(f"  → 嘗試從 {source_name} 獲取...")
+                print(f"  [INFO] 嘗試從 {source_name} 獲取...")
                 
                 result = method(**kwargs)
                 
                 # 驗證結果
                 if result is not None:
                     if isinstance(result, pd.DataFrame) and len(result) == 0:
-                        print(f"  ✗ {source_name} 返回空數據")
+                        print(f"  [FAIL] {source_name} 返回空數據")
                         self.source_stats[source_name]['failure'] += 1
                         continue
                     
                     # 成功
-                    print(f"  ✓ 從 {source_name} 成功獲取")
+                    print(f"  [OK] 從 {source_name} 成功獲取")
                     self.source_stats[source_name]['success'] += 1
                     return result
                 else:
-                    print(f"  ✗ {source_name} 返回 None")
+                    print(f"  [FAIL] {source_name} 返回 None")
                     self.source_stats[source_name]['failure'] += 1
                     
             except Exception as e:
-                print(f"  ✗ {source_name} 發生錯誤: {str(e)}")
+                print(f"  [FAIL] {source_name} 發生錯誤: {str(e)}")
                 self.source_stats[source_name]['failure'] += 1
                 last_error = e
                 continue
         
         # 所有來源都失敗
-        print(f"  ✗ 所有資料來源都無法獲取數據")
+        print(f"  [FAIL] 所有資料來源都無法獲取數據")
         if last_error:
             print(f"  最後錯誤: {str(last_error)}")
         

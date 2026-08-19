@@ -1,3 +1,6 @@
+# DEPRECATED: Use pyproject.toml + uv for dependency management
+# This file is kept for backward compatibility reference only
+
 FinMind>=0.4.0
 finlab>=0.5.0
 streamlit>=1.30.0
@@ -14,6 +17,8 @@ requests>=2.31.0
 reportlab>=4.0.0
 kaleido>=0.2.1
 Pillow>=10.0.0
+APScheduler>=3.10.4
+Sphinx>=7.4.0
 
 # Testing Dependencies
 pytest>=7.4.0
