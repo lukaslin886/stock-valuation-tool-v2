@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "captured_at": "2026-08-19T16:02:40.877753+00:00",
+  "captured_at": "2026-08-23T03:38:37.450272+00:00",
   "source_mode": "deterministic_local_inputs",
   "market_scan": {
     "status": "not_captured",
@@ -56,7 +56,7 @@
         "terminal_value": 48.86375160567681,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.876881",
+          "timestamp": "2026-08-23T11:38:37.448216",
           "stock_code": "1101",
           "stock_name": null,
           "current_price": 80.0,
@@ -84,7 +84,7 @@
         ],
         "terminal_value": 48.86375160567681,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877017",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -133,7 +133,7 @@
         "terminal_value": 58.45022783929972,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877195",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "1216",
           "stock_name": null,
           "current_price": 87.5,
@@ -161,7 +161,7 @@
         ],
         "terminal_value": 58.45022783929972,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877221",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -210,7 +210,7 @@
         "terminal_value": 69.40240131110654,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877253",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "1301",
           "stock_name": null,
           "current_price": 95.0,
@@ -238,7 +238,7 @@
         ],
         "terminal_value": 69.40240131110654,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877268",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -287,7 +287,7 @@
         "terminal_value": 70.92859511625493,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877294",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "1326",
           "stock_name": null,
           "current_price": 102.5,
@@ -315,7 +315,7 @@
         ],
         "terminal_value": 70.92859511625493,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877309",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -364,7 +364,7 @@
         "terminal_value": 69.23108677840561,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877327",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "1402",
           "stock_name": null,
           "current_price": 110.0,
@@ -392,7 +392,7 @@
         ],
         "terminal_value": 69.23108677840561,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877338",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -441,7 +441,7 @@
         "terminal_value": 81.04842785101286,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877354",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "1476",
           "stock_name": null,
           "current_price": 117.5,
@@ -469,7 +469,7 @@
         ],
         "terminal_value": 81.04842785101286,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877367",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -518,7 +518,7 @@
         "terminal_value": 81.81748065872796,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877383",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2002",
           "stock_name": null,
           "current_price": 125.0,
@@ -546,7 +546,7 @@
         ],
         "terminal_value": 81.81748065872796,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877392",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -595,7 +595,7 @@
         "terminal_value": 95.07586106584475,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877406",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2105",
           "stock_name": null,
           "current_price": 132.5,
@@ -623,7 +623,7 @@
         ],
         "terminal_value": 95.07586106584475,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877418",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -672,7 +672,7 @@
         "terminal_value": 91.45260924355223,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877433",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2207",
           "stock_name": null,
           "current_price": 140.0,
@@ -700,7 +700,7 @@
         ],
         "terminal_value": 91.45260924355223,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877442",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -749,7 +749,7 @@
         "terminal_value": 91.54242655179277,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877456",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2303",
           "stock_name": null,
           "current_price": 147.5,
@@ -777,7 +777,7 @@
         ],
         "terminal_value": 91.54242655179277,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877470",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -826,7 +826,7 @@
         "terminal_value": 105.57427405446282,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877485",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2317",
           "stock_name": null,
           "current_price": 155.0,
@@ -854,7 +854,7 @@
         ],
         "terminal_value": 105.57427405446282,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877494",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -903,7 +903,7 @@
         "terminal_value": 121.38359850108091,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877509",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2330",
           "stock_name": null,
           "current_price": 162.5,
@@ -931,7 +931,7 @@
         ],
         "terminal_value": 121.38359850108091,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877519",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -980,7 +980,7 @@
         "terminal_value": 100.17069079163744,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877540",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2345",
           "stock_name": null,
           "current_price": 170.0,
@@ -1008,7 +1008,7 @@
         ],
         "terminal_value": 100.17069079163744,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877549",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1057,7 +1057,7 @@
         "terminal_value": 114.88493058069258,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877565",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2357",
           "stock_name": null,
           "current_price": 177.5,
@@ -1085,7 +1085,7 @@
         ],
         "terminal_value": 114.88493058069258,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877575",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1134,7 +1134,7 @@
         "terminal_value": 131.42156844018044,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877589",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2379",
           "stock_name": null,
           "current_price": 185.0,
@@ -1162,7 +1162,7 @@
         ],
         "terminal_value": 131.42156844018044,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877598",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1211,7 +1211,7 @@
         "terminal_value": 129.91871382680367,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877612",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2382",
           "stock_name": null,
           "current_price": 192.5,
@@ -1239,7 +1239,7 @@
         ],
         "terminal_value": 129.91871382680367,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877621",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1288,7 +1288,7 @@
         "terminal_value": 123.0774876060544,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877636",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2454",
           "stock_name": null,
           "current_price": 200.0,
@@ -1316,7 +1316,7 @@
         ],
         "terminal_value": 123.0774876060544,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877649",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1365,7 +1365,7 @@
         "terminal_value": 140.24901862914388,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877663",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2603",
           "stock_name": null,
           "current_price": 207.5,
@@ -1393,7 +1393,7 @@
         ],
         "terminal_value": 140.24901862914388,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877673",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1442,7 +1442,7 @@
         "terminal_value": 138.1508279975243,
         "recommendation": "觀望 - 價格接近內在價值",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877700",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "2881",
           "stock_name": null,
           "current_price": 215.0,
@@ -1470,7 +1470,7 @@
         ],
         "terminal_value": 138.1508279975243,
         "recommendation": "觀望 - 價格接近內在價值",
-        "calculated_at": "2026-08-20T00:02:40.877715",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     },
@@ -1519,7 +1519,7 @@
         "terminal_value": 156.98572408546454,
         "recommendation": "考慮 - 視市場情況決定",
         "input_parameters": {
-          "timestamp": "2026-08-20T00:02:40.877731",
+          "timestamp": "2026-08-23T11:38:37.450272",
           "stock_code": "3008",
           "stock_name": null,
           "current_price": 222.5,
@@ -1547,7 +1547,7 @@
         ],
         "terminal_value": 156.98572408546454,
         "recommendation": "考慮 - 視市場情況決定",
-        "calculated_at": "2026-08-20T00:02:40.877741",
+        "calculated_at": "2026-08-23T11:38:37.450272",
         "data_source": ""
       }
     }
