@@ -1,0 +1,131 @@
+[project]
+name = "stock-valuation-tool"
+version = "3.0.0"
+description = "台股與美股估值分析工具"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "林皇辰" }]
+
+dependencies = [
+    "pydantic>=2.0.0",
+    "streamlit>=1.30.0",
+    "pandas>=2.2.0",
+    "numpy>=1.26.0",
+    "plotly>=5.18.0",
+    "scipy>=1.12.0",
+    "yfinance>=0.2.36",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "openpyxl>=3.1.2",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "reportlab>=4.0.0",
+    "kaleido>=0.2.1",
+    "Pillow>=10.0.0",
+    "APScheduler>=3.10.4",
+    "FinMind>=0.4.0",
+    "finlab>=0.5.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "hypothesis>=6.100.0",
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "pytest-html>=4.1.0",
+    "pytest-timeout>=2.2.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "pydocstyle>=6.3.0",
+    "pre-commit>=3.7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# --- Ruff ---
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+ignore = [
+    "E501",   # line-too-long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# --- Mypy ---
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "yfinance.*",
+    "FinMind.*",
+    "finlab.*",
+    "streamlit.*",
+    "plotly.*",
+    "scipy.*",
+    "openpyxl.*",
+    "reportlab.*",
+    "kaleido.*",
+    "apscheduler.*",
+]
+ignore_missing_imports = true
+
+# --- Pytest ---
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers -v"
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "property: Property-based tests (Hypothesis)",
+    "fast: Fast tests suitable for pre-commit (< 30s)",
+    "slow: Tests that take longer than 10 seconds",
+]
+
+# --- Coverage ---
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/views/*",
+    "app/__pycache__/*",
+    "*/__pycache__/*",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.",
+]
+
+# --- Pydocstyle ---
+[tool.pydocstyle]
+convention = "google"
+match = "(?!test_).*\\.py"
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.161.2",
+]
