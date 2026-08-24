@@ -62,12 +62,21 @@ def fetch_price(code: str):
     return None, None
 
 
+def _batch_size() -> int:
+    """六日（無開盤）加量補齊，平日維持小批防限流。
+
+    2026-08-24：使用者要求六日也更新股票資訊。六日台股休市、全球流量低，
+    Yahoo 限流風險小，放大到 300 檔加速全覆蓋；平日維持 150 檔防限流。
+    """
+    weekday = datetime.now().weekday()  # 0=一 ... 5=六, 6=日
+    return 300 if weekday >= 5 else MAX_PER_RUN
+
+
 def main() -> None:
     conn = sqlite3.connect(str(DB_PATH))
     cur = conn.cursor()
 
-    # 優先補「目前無價格」的股票。ETF 類(005x/006x)優先，避免永遠被擠掉。
-    # ETF 是使用者最常看的，每輪必抓；其餘 0 檔亂序補。
+    # ①優先補「目前無價格」的股票。ETF 類(005x/006x)優先，避免永遠被擠掉。
     etf_zero = [
         r[0]
         for r in cur.execute(
@@ -86,12 +95,33 @@ def main() -> None:
     ]
     random.shuffle(etf_zero)
     random.shuffle(other_zero)
-    # ETF 全抓 + 其他 0 檔補到 MAX_PER_RUN
-    codes = etf_zero + other_zero[: max(0, MAX_PER_RUN - len(etf_zero))]
-    print(f"本次：ETF優先 {len(etf_zero)} 檔 + 其他0檔 {len(codes) - len(etf_zero)} 檔 (共 {len(codes)} 檔)")
+
+    batch = _batch_size()
+    codes = (etf_zero + other_zero)[:batch]
+
+    # ②額度未滿 → 按 last_updated 最舊的補（維持全庫資料新鮮度，每日輪替更新）
+    if len(codes) < batch:
+        stale = [
+            r[0]
+            for r in cur.execute(
+                "SELECT stock_code FROM market_snapshot "
+                "WHERE (paused IS NOT 1 OR paused IS NULL) AND current_price > 0 "
+                "ORDER BY last_updated ASC LIMIT ?",
+                (batch - len(codes),),
+            ).fetchall()
+        ]
+        codes += stale
+
+    # ③全覆蓋保護：無檔可更新時優雅退出（避免 ZeroDivisionError，2026-08-24 修）
+    if not codes:
+        print("[DONE] 全量已覆蓋，本輪無需更新")
+        conn.close()
+        return
+
+    print(f"本次：缺價 {len(etf_zero + other_zero)} 檔 + 補舊 {max(0, len(codes) - len(etf_zero + other_zero))} 檔 (共 {len(codes)} 檔)")
 
     updated = failed = delisted = 0
-    for code in codes[:MAX_PER_RUN]:
+    for code in codes[:batch]:
         try:
             price, suffix = fetch_price(code)
             if price:
