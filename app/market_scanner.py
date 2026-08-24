@@ -87,9 +87,60 @@ class MarketScanner:
             
             df["last_updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            # Save to SQLite
+            # Save to SQLite — UPSERT (保留既有 current_price/high_52w/low_52w，避免 FinLab
+            # 無價格資料時把整表清成 0；2026-08-22 修復 if_exists="replace" 每日清空價格的 bug)
             conn = sqlite3.connect(self.db_path)
-            df[cols + ["last_updated"]].to_sql("market_snapshot", conn, if_exists="replace", index=False)
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # 讀出現有價格，作為 fallback
+            try:
+                old = pd.read_sql("SELECT stock_code, current_price, high_52w, low_52w FROM market_snapshot", conn)
+            except Exception:
+                old = pd.DataFrame(columns=["stock_code", "current_price", "high_52w", "low_52w"])
+            old_map = old.set_index("stock_code").to_dict("index")
+            
+            upsert_cols = ["stock_code", "stock_name", "current_price", "pe_ratio", "pb_ratio",
+                           "dividend_yield", "roe", "market_cap", "revenue_growth",
+                           "high_52w", "low_52w", "last_updated"]
+            cur = conn.cursor()
+            for _, row in df.iterrows():
+                code = str(row.get("stock_code", ""))
+                if not code:
+                    continue
+                price = float(row.get("current_price") or 0.0)
+                hi = float(row.get("high_52w") or 0.0)
+                lo = float(row.get("low_52w") or 0.0)
+                if code in old_map:
+                    # 新值無效時保留舊值（只在新值有效時覆蓋）
+                    if price <= 0:
+                        price = float(old_map[code].get("current_price") or 0.0)
+                    if hi <= 0:
+                        hi = float(old_map[code].get("high_52w") or 0.0)
+                    if lo <= 0:
+                        lo = float(old_map[code].get("low_52w") or 0.0)
+                    cur.execute(
+                        """UPDATE market_snapshot SET stock_name=?, current_price=?, pe_ratio=?,
+                           pb_ratio=?, dividend_yield=?, roe=?, market_cap=?, revenue_growth=?,
+                           high_52w=?, low_52w=?, last_updated=?
+                           WHERE stock_code=?""",
+                        (row.get("stock_name", ""), price,
+                         float(row.get("pe_ratio") or 0.0), float(row.get("pb_ratio") or 0.0),
+                         float(row.get("dividend_yield") or 0.0), float(row.get("roe") or 0.0),
+                         float(row.get("market_cap") or 0.0), float(row.get("revenue_growth") or 0.0),
+                         hi, lo, now, code)
+                    )
+                else:
+                    cur.execute(
+                        """INSERT INTO market_snapshot (stock_code, stock_name, current_price,
+                           pe_ratio, pb_ratio, dividend_yield, roe, market_cap, revenue_growth,
+                           high_52w, low_52w, last_updated)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        (code, row.get("stock_name", ""), price,
+                         float(row.get("pe_ratio") or 0.0), float(row.get("pb_ratio") or 0.0),
+                         float(row.get("dividend_yield") or 0.0), float(row.get("roe") or 0.0),
+                         float(row.get("market_cap") or 0.0), float(row.get("revenue_growth") or 0.0),
+                         hi, lo, now)
+                    )
+            conn.commit()
             conn.close()
             return True
         except Exception as e:

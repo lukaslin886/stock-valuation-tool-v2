@@ -33,6 +33,9 @@ venv.bak/
 
 # 資料庫和快取
 *.db
+*.db-journal
+*.db.bak*
+*.bak*
 *.sqlite3
 data/*.db
 .cache/
@@ -65,6 +68,9 @@ cloudflared.exe
 coverage.xml
 reports/*.html
 MY_STOCK/
+
+# 2026-08-24 來源待確認，見 HANDOFF.md §7.A.2，確認後移除此行
+/all_companies_basic_data.json
 
 # Sphinx docs build output
 docs/_build/

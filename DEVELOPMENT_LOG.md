@@ -6,6 +6,295 @@
 
 ## 最新更新
 
+### v2.3.3 (2026-05-06) 🔍 FinLab 數據空值診斷 (Diagnosis Phase)
+
+**發現問題：FinLab 基本面數據全為 0.0** ⚠️
+
+ - **症狀**：資料庫中有 1832 筆資料，但除 `current_price` 外，其餘 `roe`, `pe_ratio`, `market_cap` 等欄位均為 `0.0`。
+ - **原因推測**：
+     1. FinLab 免費版可能限制了 `fundamental_features` 分類的使用。
+     2. 欄位索引與 `close_price` 的主索引完全沒有交集。
+     3. API 欄位名稱變更。
+ - **行動**：建立 `test_finlab_diagnostic.py` 進行深度診斷。
+
+### v2.4.0 (2026-05-06) 🚀 數據中樞重構 (Data Fusion Hub)
+- **混合數據架構 (Data Fusion)**：徹底整合 FinLab 與 Yahoo Finance。
+  - **FinLab (骨架)**：提供 ROE、殖利率、本益比、公司名稱等基礎架構。
+  - **Yahoo Finance (血肉)**：在儲存前強制進行 **2026 年即時補丁**，更新當前股價與 52 週高低點位階。
+- **統一儲存中樞**：新增 `_finalize_and_save_snapshot` 函數，標準化所有引擎的輸出格式，確保 UI 一致性。
+- **2026 完全同步**：解決了免費版 FinLab 數據停在 2018 年的問題，現在介面顯示的是 **2026 年目前的最新行情**。
+
+### v2.3.7 (2026-05-06) 🛡️ 數據完整性與名稱補完
+- **名稱自動查表 (P5-NAME-RECOVERY)**：整合 `company_basic_info` 解決 FinLab 名稱遺失問題。
+- **單位自適應校正 (P5-UNIT-ADAPTIVE)**：自動偵測 ROE 格式 (0.05 vs 5.0) 並統一。
+- **Pandas 索引對齊**：解決不同數據集（收盤價、ROE、PE、殖利率、市值）索引不一致導致的 NaN 問題。
+- **`price_position` 崩潰防護**：加入 52 週高低點欄位存在性檢查。
+- **市值單位自動識別**：自動偵測並統一轉換為「億」。
+
+### v2.3.1 (2026-05-06) 🔧 偵錯與修補 (Hotfix)
+
+**確認問題根源並修正** ✅
+
+ - ✅ **修正 .env Token 導入錯誤**: 
+     - `FINMIND_TOKEN` 往先多了 `yo` 字元，導致 API 回傳 `Token is illegal`，已修復。
+ - ✅ **確認 FinMind 免費版限制**: 
+     - 免費 register 等級無法使用 `TaiwanStockPER` 批次查詢。
+     - 建議使用 **FinLab** 作為主要全市場掃描引擎（免費，效能最佳）。
+ - ✅ **UI 友善錯誤提示**: 
+     - FinMind 等級限制時，直接顯示升級連結和建議切換 FinLab 的指尌。
+
+### v2.3.0 (2026-05-06) 🚀 三引擎混合掃描 (Triple-Engine & Persistence)
+
+ **達成極速更新與持久化驗證** ✅
+
+ - ✅ **三引擎並行架構**: 
+     - 整合 **Yahoo Finance** (即時)、**FinLab** (極速) 與 **FinMind** (專業)。
+     - 使用者可依據 API 權限自由切換。
+ - ✅ **持久化驗證架構 (.env)**: 
+     - 建立 `.env` 管理系統，自動帶入 `FINLAB_API_TOKEN` 與 `FINMIND_TOKEN`。
+     - 顯著提升使用者體驗，解決重複貼上驗證碼的問題。
+ - ✅ **數據單位精確化**: 
+     - 統一各來源市值單位為「億台幣」。
+     - 修復了跨資料來源合併時，因市值單位不一致導致的篩選失效問題。
+
+### v2.2.0 (2026-05-06) 🦾 混合式掃描引擎升級 (Hybrid Scanner)
+
+ **全面解決數據抓取穩定性與封鎖問題** ✅
+
+ - ✅ **實作「混合式掃描器」 (P6-01)**: 
+     - 整合 **FinLab** 批次抓取技術。
+     - **效能提升**: 原本需 2-5 分鐘的掃描，使用 FinLab 僅需不到 10 秒即可更新全市場 2500+ 檔股票。
+     - **穩定性**: 徹底避開 Yahoo Finance 的 IP 封鎖機制。
+ - ✅ **流量限制自動偵測 (P6-02)**: 
+     - 在 Yahoo Finance 模式下加入 `Rate Limit` 偵測。
+     - 即時於進度條提示使用者目前 IP 被限制，不再發生無效等待。
+ - ✅ **資料庫結構自癒系統**: 
+     - 強制使用 **絕對路徑** 存取資料庫，解決專案目錄混亂導致的「資料庫為空」問題。
+     - 實作 `reset_index` 防護邏輯，確保 `stock_code` 欄位永遠不會在合併過程中遺失。
+
+### v2.1.1 (2026-05-06) 🛠️ Bug Fixes & Refinement
+ 
+ **修復數據計算邏輯** ✅
+ 
+ - ✅ **修正「位階」計算 Bug**: 
+     - 修正了「位階 (Price Position)」欄位僅在開啟低基期篩選時才計算的問題。
+     - 現在所有標的都會自動計算位階（0.0 ~ 1.0），方便使用者在一般篩選模式下也能參考個股的股價高低位。
+
+### v2.1.0 (2026-05-06) 🚀 UI/UX 進階演進 (Phase 5 啟動)
+ 
+ **大幅提升市場篩選器的視覺化分析與操作深度** ✅
+ 
+ **核心改善**:
+ - ✅ **ROE vs PE 交互式散佈圖 (P5-01)**: 
+     - 實作動態散佈圖，視覺化呈現「甜點區」（高 ROE、低 PE）。
+     - 泡泡大小代表市值，顏色代表評分，支援 Hover 顯示個股詳情。
+     - 加入 ROE 15% 與 PE 15 輔助參考線。
+ - ✅ **篩選摘要卡片 (P5-03)**: 
+     - 在結果上方新增 4 欄位指標卡，即時顯示標的總數、平均評分、平均殖利率與平均 ROE。
+ - ✅ **名單匯出 Excel (P5-08)**: 
+     - 新增一鍵匯出功能，支援將篩選後的中文表格直接存為 `.xlsx` 檔案，方便研究紀錄。
+ - ✅ **Premium 進度反饋 (P5-06)**: 
+     - 優化市場數據更新進度條，現在會即時顯示目前正在處理的股票名稱。
+
+### v2.0.2 (2026-05-06) 🎨 UI/UX Optimization
+ 
+ **市場篩選器介面優化與中文化** ✅
+ 
+ **核心改善**:
+ - ✅ **新增「一鍵篩選」策略範本**: 
+     - 💰 **存股高息王**: 鎖定殖利率 > 6.5% 且營運穩健的公司。
+     - 🏰 **護城河優質股**: 鎖定 ROE > 25% 且具備規模優勢的大型企業。
+     - 📈 **底部反轉機股**: 鎖定股價處於歷史低位且估值便宜的潛力股。
+ - ✅ **表格中文化與優化**: 將初篩結果的欄位標題全面改為中文（代碼、名稱、股價、市值、PE 等），並調整單位（市值改為以「億」為單位）。
+ - ✅ **視覺化評分系統**: 為「評分 (Fundamental Score)」欄位加入條件式背景顏色（綠/青/黃/紅），協助使用者快速辨識股票體質優劣。
+ - ✅ **排序與去重**:
+     - 預設改以評分 (Fundamental Score) **降冪排列**，讓最優標的一目了然。
+     - 實作資料存取兩端的 `drop_duplicates` 機制，徹底解決代碼重複顯示問題。
+ - ✅ **規則合規化 (UI-EXCEPTION)**: 遵循最新修正的 _AI_Rules，在 UI 顯示層例外允許使用 Emoji 並加註註解，在保持相容性的同時極大化視覺體驗。
+
+### 🚀 未來演進規劃 (Next Steps)
+ - **視覺化分析 (Visual Analysis)**: 引入 ROE vs PE 散佈圖與股價 Sparklines 趨勢。
+ - **資訊層級 (Information Hierarchy)**: 實作「個股詳情彈窗」與「篩選摘要統計卡片」。
+ - **專業細節 (Premium Feel)**: 優化資料抓取進度條的細粒度反饋與 RWD 佈局。
+
+ 
+ **調整檔案**:
+ - `app/views/market_screener.py` (UI 邏輯)
+ 
+ **預期效益**:
+ 1. 提升台灣使用者的操作直覺性。
+ 2. 透過顏色管理簡化決策流程，資訊層級更分明。
+
+### v2.0.1 (2026-05-05) 🛠️ Hotfix
+ 
+ **修復市場掃描器與快取邏輯問題** ✅
+ 
+ **核心修正**:
+ - ✅ **解決資料庫覆蓋 Bug**: 修改 `MarketScanner.update_market_snapshot`，將原本的 `if_exists="replace"` 邏輯改為「讀取舊資料 -> 合併新結果 -> 更新」，避免因單次更新失敗（如被 Yahoo Finance 阻擋）導致全市場資料被清空。
+ - ✅ **解決快取清單不完整問題**: 修改 `DataManagerV2.get_all_stocks`，增加「數量閾值檢查 (> 1000)」。當 SQLite 快取中的股票數量不足時（通常是個別查詢留下的零星記錄），會強制重新從 FinMind 抓取完整清單。
+ - ✅ **解決資料庫型態衝突 (TypeError)**: 針對市場掃描器進行全方位數值轉型防護。在抓取資料、合併資料、以及讀取資料進行篩選時，皆強制將關鍵欄位（本益比、殖利率等）轉換為 `float`，避免因 SQLite 存入空字串或 "N/A" 導致的 `str` 與 `int` 比較錯誤。
+ - ✅ **解決重複資料問題**: 在資料存入與讀取階段皆強制執行 `drop_duplicates`，防止因資料庫合併異常導致同一檔股票重複出現在篩選清單中。
+ - ✅ **提升掃描穩定性**: 
+     - 在 `MarketScanner` 掃描前預先過濾出 4 位數純數字的台股代碼，減少無謂的 API 請求（從 4000+ 降至 ~1800 檔）。
+     - 調低執行緒數量至 10 以降低被 Yahoo Finance 偵測封鎖的風險。
+ 
+ **調整檔案**:
+ - `app/market_scanner.py` (資料合併與過濾邏輯)
+ - `app/data/manager.py` (快取閾值邏輯)
+ 
+ **預期效益**:
+ 1. 解決「更新市場數據只更新一筆」的問題。
+ 2. 確保市場快照資料庫的完整性，即使更新中斷也會保留舊有數據。
+
+### v2.0.0 (2026-05-05) ⭐ 當前版本
+ 
+ **Phase 3.2 深化分析與驗證 (Analytical Depth) 核心模組上線** ✅
+ 
+ **核心改善**:
+ - ✅ **資料層擴充**：`YFinanceSource` 與 `FinMindSource` 納入 OCF (營業現金流)、Inventory (存貨) 與 COGS (營業成本) 抓取邏輯。
+ - ✅ **財報品質分析**：實作 `get_quality_indicators()`，計算盈餘含金量 (OCF/NI)、存貨週轉率與毛利率穩定度。
+ - ✅ **自動參數優化**：新增 `optimize_growth_parameters()`，透過迴圈回測尋找最佳時間加權衰減參數 ($\lambda$)，提升估值精準度。
+ - ✅ **滑價模型整合**：將 `SlippageModel` 深度整合至 `BacktestEngine`，回測績效現在會考慮市場衝擊與波動滑價成本。
+ - ✅ **UI 視覺化**：
+     - 新增「💎 財報品質指標」儀表板。
+     - 新增獨立「成長參數優化」功能頁面，展示參數表現趨勢圖。
+ 
+ **調整檔案**:
+ - `app/data/manager.py` (主要邏輯)
+ - `app/backtest.py` (滑價整合)
+ - `app/data/sources/yfinance_source.py` & `finmind_source.py`
+ - `app/data/cache/sqlite_cache.py` (Schema 更新)
+ - `app/views/growth_optimizer.py` (新增)
+ - `app/views/dcf_valuation.py` & `app/main.py` (UI 更新)
+ 
+ **驗證結果**:
+ 1. 單元測試 `tests/unit/test_analytical_depth.py` 驗證核心指標計算正確。
+ 2. 實測 2330 (台積電) 可正確產出 OCF/NI 指標與最佳權重比例。
+ 
+ **預期效益**:
+ 1. 估值模型從單一 EPS 成長轉向具備「現金流品質」與「營運效率」維度的深度分析。
+ 2. 參數設定從「經驗法則」轉向「數據驅動」的自動化優化。
+ 3. 回測報告更具備現實參考價值，避免過度樂觀。
+ 
+ ### v1.9.3 (2026-05-02)
+
+**P2-18 Sphinx API 文件完成（含 GitHub Pages 發布流程）** ✅
+
+**核心改善**:
+- ✅ 建立標準 Sphinx 結構：`docs/source`、`conf.py`、`index.rst`
+- ✅ 新增 API 章節：`core`、`data_layer`、`cache`、`sources`、`risk`
+- ✅ 啟用 `autodoc`、`napoleon`、`autosummary`、`viewcode`，支援自動產生 API 參考文件
+- ✅ 新增 `docs/Makefile` 與 `docs/make.bat`，支援 Linux/Windows 建置
+- ✅ 新增 GitHub Actions workflow（`.github/workflows/docs.yml`）自動部署到 GitHub Pages
+- ✅ 更新 README 加入文件建置與部署說明
+
+**調整檔案**:
+- `docs/source/conf.py`（新增）
+- `docs/source/index.rst`（新增）
+- `docs/source/api/index.rst`（新增）
+- `docs/source/api/core.rst`（新增）
+- `docs/source/api/data_layer.rst`（新增）
+- `docs/source/api/cache.rst`（新增）
+- `docs/source/api/sources.rst`（新增）
+- `docs/source/api/risk.rst`（新增）
+- `docs/Makefile`（新增）
+- `docs/make.bat`（新增）
+- `.github/workflows/docs.yml`（新增）
+- `requirements.txt`
+- `README.md`
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `python -m sphinx -b html docs/source docs/_build/html`（repo `.venv`）→ build succeeded
+
+**預期效益**:
+1. API 文件由手寫轉為可自動更新，降低維護成本
+2. 新增 GitHub Pages 發布流程，便於團隊與外部協作者查閱
+3. 為後續補充模組 docstring 與設計文件建立一致入口
+
+### v1.9.2 (2026-05-02)
+
+**P2-13 資料庫索引結構優化完成（TTL 驗證熱點）** ✅
+
+**核心改善**:
+- ✅ 補上 `price_data(stock_code, update_time)` 索引，對應股價快取 TTL 驗證查詢
+- ✅ 補上 `financial_data(stock_code, update_time)` 索引，對應財報快取 TTL 驗證查詢
+- ✅ 補上 `stock_info(update_time)` 索引，改善股票主檔全表 TTL 驗證
+- ✅ 避免對既有 `UNIQUE(stock_code, date)` 已覆蓋的讀取路徑重複加索引，控制磁碟與寫入成本
+- ✅ 新增 schema 測試，直接檢查 SQLite 初始化後的索引清單
+
+**調整檔案**:
+- `app/data/cache/sqlite_cache.py`
+- `tests/unit/test_sqlite_cache.py`（新增）
+- `artifacts/plan_p2_13_index_optimization_20260502.md`（新增）
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_sqlite_cache.py tests/unit/test_data_manager.py -q` → 34 passed
+
+**預期效益**:
+1. 降低 TTL 檢查在資料量增長後的掃描成本
+2. 維持索引精簡，避免對既有唯一鍵路徑重複投資
+3. 讓後續排程更新與快取失效機制在同一套 schema 上穩定運作
+
+### v1.9.1 (2026-05-02)
+
+**P2-11 資料自動更新排程完成（APScheduler）** ✅
+
+**核心改善**:
+- ✅ 新增獨立排程模組 `app/update_scheduler.py`，封裝 APScheduler 啟停與 job 註冊
+- ✅ 建立每日股價/市場快照更新 job，直接沿用 `MarketScanner.update_market_snapshot()`
+- ✅ 建立每季財報快取更新 job，透過 `DataManagerV2` 清除對應財報快取後重新抓取
+- ✅ 以可注入 factory / provider 設計，方便測試與後續替換為正式批次執行環境
+- ✅ 新增 4 個單元測試，覆蓋 job 註冊、每日更新、每季更新、股票清單正規化
+- ✅ `requirements.txt` 新增 `APScheduler` 依賴
+
+**調整檔案**:
+- `app/update_scheduler.py`（新增）
+- `tests/unit/test_update_scheduler.py`（新增）
+- `requirements.txt`
+- `artifacts/plan_p2_11_scheduler_20260502.md`（新增）
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_update_scheduler.py -q` → 4 passed
+2. `uv run python -m py_compile app/update_scheduler.py` → PASSED
+
+**預期效益**:
+1. 資料更新能力從手動操作提升為可排程執行，為後續 daemon / Windows Task Scheduler 整合鋪路
+2. 排程與 UI 分離，降低 Streamlit 常駐生命周期導致的副作用
+3. 後續可直接擴展更多 job（TTL 清理、深度掃描、報表預生成）而不需重構主程式
+
+### v1.8.9 (2026-05-02)
+
+**P2-12 快取過期機制（TTL）完成（股價 1h / 財報 7d）** ✅
+
+**核心改善**:
+- ✅ `DataManagerV2` 正式整合 SQLite 快取有效性判斷，避免長期使用過期資料
+- ✅ 新增秒級 TTL 設定：股價 1 小時、財報 7 天（並延伸套用到股票資訊/股票清單）
+- ✅ 快取過期時自動清理對應 SQLite 資料並改走資料來源重抓
+- ✅ `CacheBackend` / `SQLiteCache` 的 `is_cache_valid()` 支援 `max_age_seconds` 參數
+- ✅ 新增/更新單元測試，驗證快取有效命中與過期失效分流
+
+**調整檔案**:
+- `app/data/cache/base.py`
+- `app/data/cache/sqlite_cache.py`
+- `app/data/manager.py`
+- `tests/unit/test_data_manager.py`
+- `TODO.md`
+- `DEVELOPMENT_LOG.md`
+
+**驗證結果**:
+1. `uv run pytest tests/unit/test_data_manager.py -q` → 33 passed
+
+**預期效益**:
+1. 降低「快取命中但資料過舊」造成的估值偏差
+2. 在效能與新鮮度間取得平衡（短 TTL 給價格、長 TTL 給財報）
+3. 讓後續排程更新（P2-11）可與 TTL 機制互補，而非互相衝突
+
 ### v1.8.8 (2026-05-01)
 
 **P2-10 個股基本面評分系統完成（0-100 分 + A+~D）** ✅
@@ -35,7 +324,7 @@
 2. 評分邏輯集中於資料層，後續可擴展到綜合報告與跨模組評分
 3. 透過容錯與單元測試，降低資料缺值與規則調整造成的回歸風險
 
-### v1.8.7 (2026-04-30) ⭐ 當前版本
+### v1.8.7 (2026-04-30)
 
 **P2-09 股票篩選功能完成（P/E + 殖利率 + ROE 多條件）** ✅
 
@@ -149,7 +438,7 @@
 
 **核心改善**:
 - ✅ 新增 `.github/workflows/uv-unit-test.yml`
-- ✅ 在 GitHub Actions 以 Python 3.10 / 3.11 / 3.12 / 3.13 執行 `tests/unit`
+- ✅ 在 GitHub Actions以 Python 3.10 / 3.11 / 3.12 / 3.13 執行 `tests/unit`
 - ✅ 自動上傳測試報告 artifact（`coverage.xml` 與 `reports/test_report.html`）
 - ✅ 保留 `uv-smoke-test.yml` 作為快速基線驗證
 - ✅ Phase 2 警告清理：移除 `YFinanceSource.get_latest_eps()` 對 `ticker.earnings` 的依賴
@@ -476,15 +765,12 @@ stock-valuation-tool/
 │   │   ├── risk_analysis.py         # 風險分析頁面
 │   │   └── comprehensive_report.py  # 綜合報告頁面
 │   ├── dcf_calculator.py            # DCF 計算引擎
-│   ├── data/                        # 資料層
-│   │   ├── sources/                 # 資料來源
-│   │   └── cache/                   # 快取機制
+│   ├── data/                        # 數據處理層
 │   ├── backtest.py                  # 回測引擎
 │   ├── risk_analysis.py             # 風險分析
 │   └── report_generator.py          # 報告生成器
 ├── DEVELOPMENT_LOG.md               # 開發日誌（本檔案）
 ├── DEVELOPMENT_LOG_ARCHIVE.md       # 歷史歸檔
-├── CALCULATION_METHODS.md           # 計算方法說明（深入學習）
 ├── FORMULA_REFERENCE.md             # 公式速查表（快速查詢）
 ├── README.md                        # 專案說明
 └── TODO.md                          # 待辦清單
