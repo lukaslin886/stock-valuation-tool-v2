@@ -136,6 +136,16 @@ class DataManagerV2:
         if cached_data is not None and len(cached_data) > 0:
             print(f"[OK] 從 SQLite 快取獲取價格數據: {stock_code}")
             self._save_to_memory_cache(cache_key, cached_data)
+            # 2026-08-25 修復：快取命中也執行資料品質評估（異常偵測 + 警告記錄）
+            # 與 get_financial_data 同源缺陷：原實作直接 return，價格異常值警告
+            # 只在第一次（來源取得時）產生，快取命中後異常偵測失效
+            validation_res = self._evaluate_data_quality(cached_data, 'price', stock_code)
+            quality = validation_res['quality_score']
+            self.quality_scores[stock_code].append(quality)
+            if validation_res['warnings']:
+                self.data_warnings[stock_code].extend(validation_res['warnings'])
+                print(f"[WARN]  價格數據警告: {', '.join(validation_res['warnings'])}")
+            print(f"[OK] 價格數據品質評分: {quality:.1f}/100")
             return cached_data
         
         # 3. 從資料來源獲取（智能備援）
@@ -198,6 +208,16 @@ class DataManagerV2:
         if cached_data is not None and len(cached_data) > 0:
             print(f"[OK] 從 SQLite 快取獲取財務數據: {stock_code}")
             self._save_to_memory_cache(cache_key, cached_data)
+            # 2026-08-25 修復：快取命中也執行資料品質評估（異常偵測 + 警告記錄）
+            # 原實作直接 return，導致「EPS 異常值」等警告永遠只在第一次（來源取得時）
+            # 產生，之後快取命中全部跳過 → 異常偵測形同失效（test_anomaly_integration 抓到）
+            validation_res = self._evaluate_data_quality(cached_data, 'financial', stock_code)
+            quality = validation_res['quality_score']
+            self.quality_scores[stock_code].append(quality)
+            if validation_res['warnings']:
+                self.data_warnings[stock_code].extend(validation_res['warnings'])
+                print(f"[WARN]  財務數據警告: {', '.join(validation_res['warnings'])}")
+            print(f"[OK] 財務數據品質評分: {quality:.1f}/100")
             return cached_data
         
         # 3. 從資料來源獲取（智能備援）

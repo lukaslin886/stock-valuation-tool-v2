@@ -2,7 +2,7 @@
 
 from unittest.mock import Mock
 
-from app.update_scheduler import DataUpdateScheduler, SchedulerConfig
+from app.scheduler import DataUpdateScheduler, SchedulerConfig
 
 
 class TestDataUpdateScheduler:
