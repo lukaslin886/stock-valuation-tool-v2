@@ -93,32 +93,54 @@ ignore_missing_imports = true
 # --- Pytest ---
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--strict-markers -v"
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "--strict-markers -v --tb=short --cov=app --cov-report=html --cov-report=term-missing --cov-report=xml --html=reports/test_report.html --self-contained-html --color=yes"
 markers = [
     "unit: Unit tests",
     "integration: Integration tests",
     "property: Property-based tests (Hypothesis)",
-    "fast: Fast tests suitable for pre-commit (< 30s)",
-    "slow: Tests that take longer than 10 seconds",
+    "performance: Performance tests",
+    "slow: Slow running tests",
+    "fast: Fast tests suitable for pre-commit",
+    "api: Tests that require API access",
+    "cache: Tests that interact with cache",
+]
+timeout = 300
+timeout_method = "thread"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]
 
 # --- Coverage ---
 [tool.coverage.run]
 source = ["app"]
 omit = [
-    "app/views/*",
-    "app/__pycache__/*",
+    "*/tests/*",
+    "*/venv/*",
     "*/__pycache__/*",
+    "*/site-packages/*",
 ]
 
 [tool.coverage.report]
 fail_under = 80
+precision = 2
 show_missing = true
+skip_covered = false
 exclude_lines = [
     "pragma: no cover",
-    "if TYPE_CHECKING:",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
     "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
 ]
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 # --- Pydocstyle ---
 [tool.pydocstyle]
