@@ -45,7 +45,8 @@ def _make_mock_data_manager(
 
 def _make_mock_dcf_calculator(intrinsic_value: float = 750.0):
     """建立預設的 DCFCalculator Mock。"""
-    dcf = MagicMock(spec=[])  # spec=[] → 任何屬性存取都會拋出 AttributeError
+    # spec 限制僅允許 calculate_dcf_value（對齊修復後 DCFCalculator API）
+    dcf = MagicMock(spec=['calculate_dcf_value'])
     dcf.calculate_dcf_value.return_value = {
         'intrinsic_value': intrinsic_value,
         'upside_potential': 0.25,

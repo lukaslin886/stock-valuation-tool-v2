@@ -94,7 +94,6 @@ class TestGetStockPrice:
         """測試從快取獲取股價數據"""
         mock_yfinance.return_value.is_available = True
         mock_cache_instance = mock_cache_class.return_value
-        mock_cache_instance.is_cache_valid.return_value = True
         mock_cache_instance.get_stock_price.return_value = sample_price_data
         
         manager = DataManagerV2()
@@ -105,11 +104,6 @@ class TestGetStockPrice:
         
         assert result is not None
         assert len(result) > 0
-        mock_cache_instance.is_cache_valid.assert_called_once_with(
-            'price',
-            '2330',
-            max_age_seconds=3600
-        )
         mock_cache_instance.get_stock_price.assert_called_once()
 
     @patch('app.data.manager.YFinanceSource')
@@ -124,14 +118,15 @@ class TestGetStockPrice:
         mock_yfinance_class,
         sample_price_data
     ):
-        """測試股價 SQLite 快取過期時會改由資料來源重新抓取"""
+        """測試股價 SQLite 快取無有效資料（過期/空）時會改由資料來源重新抓取"""
         mock_yfinance_instance = mock_yfinance_class.return_value
         mock_yfinance_instance.is_available = True
         mock_yfinance_instance.is_ready.return_value = True
         mock_yfinance_instance.get_stock_price.return_value = sample_price_data
 
         mock_cache_instance = mock_cache_class.return_value
-        mock_cache_instance.is_cache_valid.return_value = False
+        # 實作為 read-through：直接查詢快取，無有效資料（None/空）時回源抓取
+        mock_cache_instance.get_stock_price.return_value = None
 
         manager = DataManagerV2()
 
@@ -140,11 +135,8 @@ class TestGetStockPrice:
         result = manager.get_stock_price('2330', start_date, end_date)
 
         assert result is not None
-        mock_cache_instance.get_stock_price.assert_not_called()
-        mock_cache_instance.clear_cache.assert_called_once_with(
-            cache_type='price',
-            stock_code='2330'
-        )
+        mock_cache_instance.get_stock_price.assert_called_once()
+        mock_cache_instance.clear_cache.assert_not_called()
         mock_yfinance_instance.get_stock_price.assert_called_once()
     
     @patch('app.data.manager.YFinanceSource')
@@ -201,7 +193,6 @@ class TestGetFinancialData:
         """測試從快取獲取財務數據"""
         mock_yfinance.return_value.is_available = True
         mock_cache_instance = mock_cache_class.return_value
-        mock_cache_instance.is_cache_valid.return_value = True
         mock_cache_instance.get_financial_data.return_value = sample_financial_data
         
         manager = DataManagerV2()
@@ -211,11 +202,7 @@ class TestGetFinancialData:
         assert len(result) > 0
         assert 'eps' in result.columns
         assert 'revenue' in result.columns
-        mock_cache_instance.is_cache_valid.assert_called_once_with(
-            'financial',
-            '2330',
-            max_age_seconds=604800
-        )
+        mock_cache_instance.get_financial_data.assert_called_once()
     
     @patch('app.data.manager.YFinanceSource')
     @patch('app.data.manager.FinMindSource')
@@ -761,27 +748,23 @@ class TestGetAllStocks:
         mock_yfinance
     ):
         """測試從快取獲取股票清單"""
+        # 實作對 SQLite 快取清單有完整度防呆：len > 1000 才視為完整清單
         stocks_df = pd.DataFrame({
-            'stock_id': ['2330', '2317', '2454'],
-            'stock_name': ['台積電', '鴻海', '聯發科']
+            'stock_id': ['2330'] + [f'{i:04d}' for i in range(1200)],
+            'stock_name': ['台積電'] + [f'測試股{i}' for i in range(1200)]
         })
         
         mock_yfinance.return_value.is_available = True
         mock_cache_instance = mock_cache_class.return_value
-        mock_cache_instance.is_cache_valid.return_value = True
         mock_cache_instance.get_all_stocks.return_value = stocks_df
         
         manager = DataManagerV2()
         result = manager.get_all_stocks()
         
         assert result is not None
-        assert len(result) == 3
+        assert len(result) == 1201
         assert '2330' in result['stock_id'].values
-        mock_cache_instance.is_cache_valid.assert_called_once_with(
-            'stocks',
-            'ALL',
-            max_age_seconds=604800
-        )
+        mock_cache_instance.get_all_stocks.assert_called_once()
 
     @patch('app.data.manager.YFinanceSource')
     @patch('app.data.manager.FinMindSource')

@@ -9,8 +9,8 @@ from typing import Any, Callable, Dict, List, Optional
 import streamlit as st
 from pydantic import BaseModel, Field
 
-from data.manager import DataManagerV2
-from market_scanner import MarketScanner
+from app.data.manager import DataManagerV2
+from app.market_scanner import MarketScanner
 
 try:
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -40,12 +40,23 @@ class DataUpdateScheduler:
         self,
         data_manager: Optional[DataManagerV2] = None,
         config: Optional[SchedulerConfig] = None,
+        scheduler: Optional[Any] = None,
+        market_scanner_factory: Optional[Callable[[], MarketScanner]] = None,
+        stock_list_provider: Optional[Callable[[], List[Dict[str, str]]]] = None,
+        data_manager_factory: Optional[Callable[[], DataManagerV2]] = None,
     ) -> None:
         """Initialize scheduler dependencies."""
         self.config = config or SchedulerConfig()
-        self.data_manager = data_manager or DataManagerV2()
-        
-        if BackgroundScheduler is None:
+        if data_manager_factory is not None:
+            self.data_manager = data_manager_factory()
+        else:
+            self.data_manager = data_manager or DataManagerV2()
+        self._market_scanner_factory = market_scanner_factory or (lambda: MarketScanner())
+        self._stock_list_provider = stock_list_provider or self._default_stock_list_provider
+
+        if scheduler is not None:
+            self.scheduler = scheduler
+        elif BackgroundScheduler is None:
             self.scheduler = None
         else:
             self.scheduler = BackgroundScheduler(timezone=self.config.timezone)
@@ -106,17 +117,17 @@ class DataUpdateScheduler:
 
     def run_daily_price_update(self) -> int:
         """Refresh market snapshot."""
-        stock_list = self._default_stock_list_provider()
+        stock_list = self._stock_list_provider()
         if not stock_list:
             return 0
 
-        scanner = MarketScanner()
+        scanner = self._market_scanner_factory()
         scanner.update_market_snapshot(stock_list)
         return len(stock_list)
 
     def run_quarterly_financial_update(self) -> int:
         """Refresh financial cache."""
-        stock_list = self._default_stock_list_provider()
+        stock_list = self._stock_list_provider()
         if not stock_list:
             return 0
 

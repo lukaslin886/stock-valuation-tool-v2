@@ -245,8 +245,15 @@ class MarketScanner:
         # Filters (Resilient to 0.0)
         if min_market_cap > 0: df = df[(df["market_cap"] >= min_market_cap) | (df["market_cap"] == 0.0)]
         if max_pe < 100: df = df[((df["pe_ratio"] > 0) & (df["pe_ratio"] <= max_pe)) | (df["pe_ratio"] == 0.0)]
-        df = df[df["dividend_yield"] >= min_yield]
-        df = df[df["roe"] >= min_roe]
+        # 舊快照可能缺欄位：欄位存在才套用門檻；缺欄位且門檻 > 0 時視為無法驗證 → 不通過
+        if "dividend_yield" in df.columns:
+            df = df[df["dividend_yield"] >= min_yield]
+        elif min_yield > 0:
+            df = df.iloc[0:0]
+        if "roe" in df.columns:
+            df = df[df["roe"] >= min_roe]
+        elif min_roe > 0:
+            df = df.iloc[0:0]
 
         # Price Position
         if "high_52w" in df.columns and "low_52w" in df.columns:
@@ -265,11 +272,38 @@ class MarketScanner:
     def _calculate_fundamental_score(self, row) -> tuple:
         score = 70
         try:
-            if row['roe'] > 15: score += 15
-            elif row['roe'] > 10: score += 10
-            if 0 < row['pe_ratio'] < 15: score += 10
-            if row['dividend_yield'] > 5: score += 5
-        except: pass
-        score = min(score, 100)
-        grade = "A+" if score >= 90 else "A" if score >= 80 else "B" if score >= 70 else "C"
+            # 缺欄位時以 0 視為「無資料」：不計分也不扣分（容錯降級）
+            roe = row.get("roe", 0) or 0
+            pe = row.get("pe_ratio", 0) or 0
+            pb = row.get("pb_ratio", 0) or 0
+            dividend_yield = row.get("dividend_yield", 0) or 0
+            revenue_growth = row.get("revenue_growth", 0) or 0
+
+            # 單位正規化：0 < v <= 1 視為小數（0.22 = 22%），否則視為百分比（22.0 = 22%）
+            if 0 < roe <= 1: roe *= 100
+            if 0 < dividend_yield <= 1: dividend_yield *= 100
+
+            # 加分：優於門檻的基本面
+            if roe > 15: score += 15
+            elif roe > 10: score += 10
+            if 0 < pe < 15: score += 10
+            if dividend_yield > 5: score += 5
+
+            # 扣分：明顯偏弱的基本面（0 / 缺值不扣，避免誤傷無資料股票）
+            if pe > 40: score -= 20
+            elif pe > 25: score -= 10
+            if 0 < roe < 5: score -= 10
+            if pb > 3: score -= 10
+            if revenue_growth < 0: score -= 15
+        except Exception:
+            pass
+        score = max(0, min(score, 100))
+        grade = (
+            "A+" if score >= 90 else
+            "A" if score >= 80 else
+            "B+" if score >= 70 else
+            "B" if score >= 60 else
+            "C" if score >= 50 else
+            "D"
+        )
         return score, grade

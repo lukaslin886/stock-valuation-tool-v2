@@ -1,10 +1,22 @@
 # 整合收尾：23 個測試失敗分類（2026-08-25）
 
 > 位置：`projects/Finance/stock-valuation-tool/`
-> 背景：Task 13 全量測試 `pytest`（910 tests）→ **887 passed / 23 failed**（97.5%）
+> 背景：Task 13 全量測試 `pytest`（910 tests）→ 887 passed / 23 failed（97.5%）
 > 失敗為「測試 ↔ 實作 API 不同步」的整合遺留，需逐一判定誰是權威後修復。
 
-## 失敗分類（5 群）
+## ✅ 修復狀態（2026-08-25 全數修復）
+
+**910 passed / 0 failed**（2026-08-25 08:55 獨立驗證，`pytest tests/ --no-cov` 全量實跑）
+
+| 群 | 檔案 | 個數 | 判定 | 修改 |
+|----|------|:---:|------|------|
+| 群 1 | growth_optimizer_bugfix + fix_simple | 10 | 改測試（spec=[] 自相矛盾）+ 改實作（浮點 off-by-one + 註解殘留） | `tests/unit/test_growth_optimizer_bugfix.py`、`app/views/growth_optimizer.py` |
+| 群 2 | market_scanner | 3 | 改實作（缺欄位容錯 + 弱股扣分，cron 選股路徑不變，已 smoke test） | `app/market_scanner.py` |
+| 群 3 | update_scheduler | 4 | 改實作（加回注入參數，向後相容） | `app/scheduler.py` |
+| 群 4 | validator | 2 | 改實作（`[OK]`→`✓`，測試是 spec） | `app/data/validator.py` |
+| 群 5 | data_manager（本文件原未分類） | 4 | 改測試（實作 read-through 從未有 is_cache_valid） | `tests/unit/test_data_manager.py` |
+
+## 原始失敗分類（供歷史查閱）
 
 ### 群 1：test_growth_optimizer_bugfix.py（10 個）+ test_growth_optimizer_fix_simple.py（1 個）
 

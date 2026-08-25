@@ -403,6 +403,6 @@ class DataValidator:
 警告數量: {warnings}
 平均品質分數: {avg_quality:.1f}/100
 
-狀態: {'[OK] 通過' if valid == total and total > 0 else '⚠ 發現問題' if total > 0 else '無資料'}
+狀態: {'✓ 通過' if valid == total and total > 0 else '⚠ 發現問題' if total > 0 else '無資料'}
 """
         return report

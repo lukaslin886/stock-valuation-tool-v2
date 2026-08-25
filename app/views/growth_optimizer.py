@@ -48,8 +48,12 @@ def show_growth_optimizer(stock_code: str, stock_name: str):
                     st.error("無法取得有效的 EPS 或股價資料，請確認股票代碼是否正確。")
                     return
 
-                # Prepare test points
-                test_lambdas = np.arange(lambda_min, lambda_max + 0.1, 0.1)
+                # Prepare test points (以整數步進避免浮點累積誤差，確保不超出 lambda_max)
+                test_lambdas = np.arange(
+                    int(round(lambda_min * 10)),
+                    int(round(lambda_max * 10)) + 1,
+                    1,
+                ) / 10.0
                 results = []
 
                 for l in test_lambdas:
@@ -103,7 +107,7 @@ def show_growth_optimizer(stock_code: str, stock_name: str):
                     marker=dict(size=8)
                 ))
 
-                # --- Fix: 改用 get_latest_price（移除不存在的 get_current_price）---
+                # --- Fix: 改用 get_latest_price 取得目前股價 ---
                 current_price = data_manager.get_latest_price(stock_code)
                 if current_price:
                     fig.add_hline(y=current_price, line_dash="dash", line_color="red", annotation_text="目前股價")
