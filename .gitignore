@@ -66,6 +66,7 @@ htmlcov/
 # Finance integration cleanup (explicit generated artifacts)
 cloudflared.exe
 coverage.xml
+coverage-lukas.xml
 reports/*.html
 MY_STOCK/
 

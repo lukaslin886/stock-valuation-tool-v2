@@ -11,7 +11,9 @@
   3. 只寫有效值（price > 0 才 UPDATE），下市股標記 deleted→跳過
 
 用法：python fix_prices.py [批次上限]
-  預設每輪 150 檔（避免 Yahoo 限流）。亂序抓取，多輪全覆蓋。
+  預設每輪 150 檔（平日）／300 檔（六日）（避免 Yahoo 限流）。亂序抓取，多輪全覆蓋。
+  傳入批次上限可覆寫（2026-09-01：stock_update.py 平日 10:00 傳 300 加速全覆蓋，
+  18:05 run_daily_advice.py 不傳維持預設，避免一天 600 檔觸發限流）。
 """
 import os
 import random
@@ -62,12 +64,16 @@ def fetch_price(code: str):
     return None, None
 
 
-def _batch_size() -> int:
+def _batch_size(override: int | None = None) -> int:
     """六日（無開盤）加量補齊，平日維持小批防限流。
 
     2026-08-24：使用者要求六日也更新股票資訊。六日台股休市、全球流量低，
     Yahoo 限流風險小，放大到 300 檔加速全覆蓋；平日維持 150 檔防限流。
+    2026-09-01：允許命令列覆寫（stock_update.py 平日 10:00 傳 300，
+    18:05 run_daily_advice 不傳維持平日 150），避免 10:00+18:05 皆 300 觸發限流。
     """
+    if override is not None:
+        return override
     weekday = datetime.now().weekday()  # 0=一 ... 5=六, 6=日
     return 300 if weekday >= 5 else MAX_PER_RUN
 
@@ -96,7 +102,7 @@ def main() -> None:
     random.shuffle(etf_zero)
     random.shuffle(other_zero)
 
-    batch = _batch_size()
+    batch = _batch_size(int(sys.argv[1]) if len(sys.argv) > 1 else None)
     codes = (etf_zero + other_zero)[:batch]
 
     # ②額度未滿 → 按 last_updated 最舊的補（維持全庫資料新鮮度，每日輪替更新）
