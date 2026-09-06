@@ -45,6 +45,7 @@ _ENV_PRODUCTION = "production"
 # 模組層級鎖，確保 handler 配置的執行緒安全
 _config_lock = threading.Lock()
 _configured_loggers: Dict[str, logging.Logger] = {}
+_shared_file_handlers: Dict[str, logging.handlers.RotatingFileHandler] = {}
 
 
 # ---------------------------------------------------------------------------
@@ -195,19 +196,29 @@ def _create_file_handler() -> logging.handlers.RotatingFileHandler:
     - UTF-8 編碼
     - 使用 StructuredFormatter
 
-    Returns:
+    返回值：
         已配置好的 RotatingFileHandler 實例。
+
+    注意：
+        多個 logger 應共用同一個 path 對應的 handler，避免 Windows 下
+        同一個 log 檔被多個 RotatingFileHandler 同時 rollover 造成
+        PermissionError。
     """
     log_dir = _ensure_log_directory()
     log_path = log_dir / _DEFAULT_LOG_FILE
+    normalized_path = str(log_path)
+
+    if normalized_path in _shared_file_handlers:
+        return _shared_file_handlers[normalized_path]
 
     handler = logging.handlers.RotatingFileHandler(
-        filename=str(log_path),
+        filename=normalized_path,
         maxBytes=_MAX_BYTES,
         backupCount=_BACKUP_COUNT,
         encoding="utf-8",
     )
     handler.setFormatter(StructuredFormatter())
+    _shared_file_handlers[normalized_path] = handler
     return handler
 
 
@@ -252,7 +263,6 @@ def _configure_logger(name: str) -> logging.Logger:
         if not logger.handlers:
             env = _get_environment()
 
-            # 檔案 handler（開發、生產皆有）
             file_handler = _create_file_handler()
             file_handler.setLevel(log_level)
             logger.addHandler(file_handler)
@@ -262,6 +272,16 @@ def _configure_logger(name: str) -> logging.Logger:
                 console_handler = _create_console_handler()
                 console_handler.setLevel(log_level)
                 logger.addHandler(console_handler)
+        else:
+            # 若 logger 已存在，但未與共用檔案 handler 連接，補上同一路徑的共享 handler。
+            shared_handler = _create_file_handler()
+            has_shared_handler = any(
+                isinstance(handler, logging.handlers.RotatingFileHandler)
+                and getattr(handler, "baseFilename", None) == shared_handler.baseFilename
+                for handler in logger.handlers
+            )
+            if not has_shared_handler:
+                logger.addHandler(shared_handler)
 
         # 防止日誌向上傳播至 root logger 造成重複輸出
         logger.propagate = False

@@ -26,6 +26,7 @@ dependencies = [
     "APScheduler>=3.10.4",
     "FinMind>=0.4.0",
     "finlab>=0.5.0",
+    "jinja2>=3.1.2",
 ]
 
 [project.optional-dependencies]
@@ -116,12 +117,27 @@ filterwarnings = [
 
 # --- Coverage ---
 [tool.coverage.run]
-source = ["app"]
+source = [
+    "app/core",
+    "app/infra",
+    "app/services",
+]
 omit = [
     "*/tests/*",
     "*/venv/*",
     "*/__pycache__/*",
     "*/site-packages/*",
+    "app/main.py",
+    "app/backtest.py",
+    "app/market_scanner.py",
+    "app/portfolio_report.py",
+    "app/report_generator.py",
+    "app/risk_analysis.py",
+    "app/stock_analyzer.py",
+    "app/technical_filter_ui.py",
+    "app/technical_indicators.py",
+    "app/views/*",
+    "app/data/*",
 ]
 
 [tool.coverage.report]

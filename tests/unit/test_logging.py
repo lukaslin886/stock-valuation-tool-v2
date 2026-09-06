@@ -211,6 +211,23 @@ class TestStructuredFormatter:
 class TestEnvironmentDetection:
     """環境偵測與日誌等級配置測試。"""
 
+    def test_multiple_loggers_share_one_rotating_file_handler(
+        self, temp_log_dir: Path
+    ) -> None:
+        """多個 logger 共享同一個 log 檔案 handler，避免 Windows 重命名衝突。"""
+        logger_a = get_logger("test_logging_a")
+        logger_b = get_logger("test_logging_b")
+
+        rotating_handlers = [
+            h
+            for h in logger_a.handlers + logger_b.handlers
+            if isinstance(h, logging.handlers.RotatingFileHandler)
+        ]
+        unique_handlers = {id(handler) for handler in rotating_handlers}
+
+        assert len(unique_handlers) == 1
+        assert Path(next(iter(rotating_handlers)).baseFilename) == temp_log_dir / "stock_tool.log"
+
     def test_default_environment_is_development(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -322,19 +339,12 @@ class TestGetLogger:
             pytest.fail("未找到 RotatingFileHandler")
 
     def test_creates_log_directory(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ) -> None:
         """日誌目錄不存在時應自動建立。"""
-        import shutil
-
         import app.infra.logging as log_module
 
-        unique_dir = (
-            Path(__file__).resolve().parent.parent.parent / ".test_logs_create"
-        )
-        # 確保測試前目錄不存在
-        if unique_dir.exists():
-            shutil.rmtree(unique_dir, ignore_errors=True)
+        unique_dir = tmp_path / ".test_logs_create"
 
         monkeypatch.setattr(log_module, "_DEFAULT_LOG_DIR", str(unique_dir))
         monkeypatch.delenv("STOCK_TOOL_ENV", raising=False)
@@ -342,9 +352,6 @@ class TestGetLogger:
         assert not unique_dir.exists()
         get_logger("test_logging_mkdir")
         assert unique_dir.exists()
-
-        # 清理
-        shutil.rmtree(unique_dir, ignore_errors=True)
 
     def test_log_propagation_disabled(
         self, temp_log_dir: Path, monkeypatch: pytest.MonkeyPatch
