@@ -91,6 +91,15 @@ class FundamentalFilter:
             return False
         if self.dividend_yield_min is not None and item.dividend_yield < self.dividend_yield_min:
             return False
-        if self.market_cap_min is not None and item.market_cap < self.market_cap_min:
-            return False
+
+        if self.market_cap_min is not None:
+            mcap = item.market_cap
+            if mcap is not None:
+                try:
+                    mcap_value = float(mcap)
+                except (TypeError, ValueError):
+                    mcap_value = 0.0
+                if mcap_value > 0 and mcap_value < self.market_cap_min:
+                    return False
+
         return True

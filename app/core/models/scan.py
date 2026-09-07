@@ -50,6 +50,7 @@ class ScanResult(BaseModel):
     chip_data_available: bool = True
     foreign_consecutive_buy: Optional[int] = None
     trust_consecutive_buy: Optional[int] = None
+    total_institutional_buy: Optional[int] = None
 
     @field_validator("roe", "dividend_yield", mode="before")
     @classmethod

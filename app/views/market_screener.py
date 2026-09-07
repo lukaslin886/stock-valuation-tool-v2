@@ -191,8 +191,8 @@ def show_market_screener(data_manager):
     filtered_df = scanner.filter_stocks(
         min_market_cap=min_cap,
         max_pe=max_pe,
-        min_yield=min_yield / 100.0,  # Convert to decimal
-        min_roe=min_roe / 100.0,
+        min_yield=min_yield,
+        min_roe=min_roe,
         low_base_enabled=low_base_only,
     )
 
@@ -215,8 +215,8 @@ def show_market_screener(data_manager):
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
     m_col1.metric("🔍 標的總數", f"{len(filtered_df)} 檔")
     m_col2.metric("💡 平均評分", f"{avg_score:.1f}")
-    m_col3.metric("💰 平均殖利率", f"{avg_yield:.2%}")
-    m_col4.metric("📈 平均 ROE", f"{avg_roe:.2%}")
+    m_col3.metric("💰 平均殖利率", f"{avg_yield:.2f}%")
+    m_col4.metric("📈 平均 ROE", f"{avg_roe:.2f}%")
 
     # --- 2. 視覺化分析 (Visual Analysis) (P5-01) ---
     with st.expander("📊 視覺化分析：ROE vs PE 甜點區", expanded=True):
@@ -245,7 +245,7 @@ def show_market_screener(data_manager):
             )
             
             # 增加輔助線 (例如 ROE 15%)
-            fig.add_hline(y=0.15, line_dash="dash", line_color="gray", annotation_text="ROE 15% 門檻")
+            fig.add_hline(y=15, line_dash="dash", line_color="gray", annotation_text="ROE 15% 門檻")
             fig.add_vline(x=15, line_dash="dash", line_color="gray", annotation_text="PE 15 門檻")
             
             st.plotly_chart(fig, use_container_width=True)
@@ -328,10 +328,10 @@ def show_market_screener(data_manager):
         "股價": "{:.2f}",
         "市值(億)": "{:,.1f}",
         "PE": "{:.2f}",
-        "殖利率": "{:.2%}",
-        "5Y平均殖利率": "{:.2%}",
-        "發放率": "{:.2%}",
-        "ROE": "{:.2%}",
+        "殖利率": "{:.2f}%",
+        "5Y平均殖利率": "{:.2f}%",
+        "發放率": "{:.2f}%",
+        "ROE": "{:.2f}%",
         "評分": "{:.1f}",
         "位階": "{:.2f}"
     })

@@ -176,7 +176,12 @@ class MarketScanner:
                     actual_key = actual_key or default_key
                     if not actual_key: return pd.Series(0.0, index=master_index)
                     
-                    s = data.get(actual_key).dropna(how='all').iloc[-1].reindex(master_index).fillna(0.0)
+                    raw_data = data.get(actual_key).dropna(how='all')
+                    # For ROE, calculate TTM (rolling 4 quarters sum) for annualized ROE
+                    if any(k in str(keywords).lower() or k in actual_key.lower() for k in ["roe", "股東權益報酬率"]):
+                        s = raw_data.rolling(4, min_periods=1).sum().iloc[-1].reindex(master_index).fillna(0.0)
+                    else:
+                        s = raw_data.iloc[-1].reindex(master_index).fillna(0.0)
                     # Unit correction
                     if ("roe" in str(keywords).lower() or "yield" in str(keywords).lower() or "殖利率" in str(keywords)) and s.mean() < 0.5:
                         s *= 100.0

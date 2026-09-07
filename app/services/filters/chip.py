@@ -112,14 +112,8 @@ class ChipFilter:
                 return False
 
         if self.total_institutional_buy_min is not None:
-            # ScanResult 目前無 total_institutional_buy 欄位，
-            # 以外資+投信連續買超天數的較小值作為近似判斷。
-            # 當 ScanResult 擴充 total_institutional_buy 欄位後可直接使用。
-            # 暫時：若外資或投信資料皆為 None 則不符合
-            foreign = item.foreign_consecutive_buy or 0
-            trust = item.trust_consecutive_buy or 0
-            total = foreign + trust
-            if total < self.total_institutional_buy_min:
+            total = item.total_institutional_buy
+            if total is None or total < self.total_institutional_buy_min:
                 return False
 
         return True
